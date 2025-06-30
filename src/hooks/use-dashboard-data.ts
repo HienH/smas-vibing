@@ -3,12 +3,14 @@
  */
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { usePlaylistStore } from '@/stores/playlist-store'
+import { useSession } from 'next-auth/react'
 
 export const useDashboardData = (userId?: string) => {
   const { setTopSongs, setPlaylist, setLoading, setError } = usePlaylistStore()
   const [isInitializing, setIsInitializing] = useState(true)
   const [hasError, setHasError] = useState(false)
   const hasInitialized = useRef(false)
+  const { data: session } = useSession()
 
   const handleRetry = useCallback(() => {
     hasInitialized.current = false
@@ -37,10 +39,12 @@ export const useDashboardData = (userId?: string) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
           })
+          let playlist = null
           if (playlistResponse.ok) {
-            const playlist = await playlistResponse.json()
-            if (isMounted) setPlaylist(playlist)
+            playlist = await playlistResponse.json()
           }
+
+          if (isMounted && playlist) setPlaylist(playlist)
         } catch (error) {
           if (isMounted) setHasError(true)
         } finally {
@@ -59,7 +63,7 @@ export const useDashboardData = (userId?: string) => {
     return () => {
       isMounted = false
     }
-  }, [userId, setTopSongs, setPlaylist, setLoading, setError])
+  }, [userId, setTopSongs, setPlaylist, setLoading, setError, session?.user?.name])
 
   useEffect(() => {
     if (!userId) {

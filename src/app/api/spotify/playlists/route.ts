@@ -16,6 +16,7 @@ import { SPOTIFY_CONFIG, APP_CONFIG } from '@/lib/constants'
 import type { Playlist as StorePlaylist, Song } from '@/stores/playlist-store'
 import { getOrCreatePlaylist, updatePlaylist } from '@/services/firebase/playlists'
 import smasCoverBase64 from '@/public/smas-cover-base64'
+import { createSharingLink, generateUniqueLinkSlug } from '@/services/firebase/sharing-links'
 
 /**
  * @description Creates or retrieves the user's SMAS playlist and syncs with Firestore.
@@ -86,7 +87,26 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // 6. Transform to SMAS format (merge Firestore metadata + Spotify tracks)
+    // 6. Generate or fetch sharing link for this playlist
+    let shareLink = ''
+    if (firestoreResult.success && firestoreResult.data) {
+      // Try to find an existing sharing link
+      // (You could also fetch by playlistId, but for simplicity, always create if not found)
+      const slugResult = await generateUniqueLinkSlug()
+      if (slugResult.success && typeof slugResult.data === 'string') {
+        const linkResult = await createSharingLink({
+          playlistId: firestoreResult.data.id,
+          ownerId: userId,
+          ownerName: session.user.name || 'User',
+          linkSlug: slugResult.data,
+        })
+        if (linkResult.success && linkResult.data) {
+          shareLink = `${APP_CONFIG.url}/share/${linkResult.data.linkSlug}`
+        }
+      }
+    }
+
+    // 7. Transform to SMAS format (merge Firestore metadata + Spotify tracks)
     const playlist: StorePlaylist = {
       id: smasPlaylist.id,
       name: smasPlaylist.name,
@@ -99,7 +119,7 @@ export async function POST(request: NextRequest) {
         contributorId: undefined // Will be updated when contributors are added
       })) || [],
       contributors: [],
-      shareLink: `${APP_CONFIG.url}/share/${userId}`
+      shareLink,
     }
 
     return NextResponse.json(playlist)
