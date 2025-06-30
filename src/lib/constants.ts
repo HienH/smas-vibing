@@ -21,6 +21,7 @@ export const SPOTIFY_CONFIG = {
     'playlist-read-private',
     'user-read-email',
     'user-library-read',
+    'ugc-image-upload'
   ].join(' '),
 } as const
 

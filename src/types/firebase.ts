@@ -30,7 +30,6 @@ export interface Playlist {
   ownerId: string // Spotify user ID
   name: string
   description?: string
-  imageUrl?: string
   trackCount: number
   createdAt: Timestamp
   updatedAt: Timestamp

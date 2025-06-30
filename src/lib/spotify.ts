@@ -28,34 +28,42 @@ export class SpotifyAPIError extends Error {
  * @throws {SpotifyAPIError} When the API request fails.
  */
 export async function spotifyRequest(
-  accessToken: string, 
-  endpoint: string, 
+  accessToken: string,
+  endpoint: string,
   options: RequestInit = {}
 ): Promise<any> {
-  const response = await fetch(`${SPOTIFY_API_BASE}${endpoint}`, {
+  const response = await fetch(`https://api.spotify.com/v1${endpoint}`, {
     ...options,
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers || {}),
+      Authorization: `Bearer ${accessToken}`,
     },
   })
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}))
-    
-    if (response.status === 401) {
-      throw new SpotifyAPIError('TOKEN_EXPIRED', 401, 'TOKEN_EXPIRED')
+  // Special case: image upload returns 202 and no body
+  if (endpoint.endsWith('/images')) {
+    if (response.status === 202) {
+      return // Success, no body to parse
     }
-    
-    throw new SpotifyAPIError(
-      `Spotify API error: ${response.status} - ${error.error?.message || 'Unknown error'}`,
-      response.status,
-      error.error?.status
-    )
+    // If not 202, treat as error
+    throw new Error(`Failed to upload playlist cover image. Status: ${response.status}`)
   }
 
-  return response.json()
+  // Usual error handling for other endpoints
+  if (response.status === 401) {
+    throw new SpotifyAPIError('TOKEN_EXPIRED', 401, 'TOKEN_EXPIRED')
+  }
+
+  // Try to parse JSON for all other endpoints
+  const data = await response.json()
+  if (!response.ok) {
+    throw new SpotifyAPIError(
+      data.error?.message || 'Spotify API error',
+      response.status,
+      data.error?.status
+    )
+  }
+  return data
 }
 
 /**
@@ -157,5 +165,31 @@ export async function getPlaylistTracks(
   return spotifyRequest(
     accessToken,
     `/playlists/${playlistId}/tracks`
+  )
+}
+
+/**
+ * @description Uploads a custom cover image to a Spotify playlist.
+ * @param {string} accessToken - The Spotify access token.
+ * @param {string} playlistId - The playlist ID.
+ * @param {string} base64Image - The base64-encoded JPEG image string (no data URI prefix).
+ * @returns {Promise<void>} Resolves on success.
+ * @see https://developer.spotify.com/documentation/web-api/reference/upload-custom-playlist-cover
+ */
+export async function uploadPlaylistCoverImage(
+  accessToken: string,
+  playlistId: string,
+  base64Image: string
+): Promise<void> {
+  await spotifyRequest(
+    accessToken,
+    `/playlists/${playlistId}/images`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'image/jpeg',
+      },
+      body: base64Image,
+    }
   )
 } 

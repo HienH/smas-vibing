@@ -40,7 +40,6 @@ export async function createPlaylist(playlistData: CreatePlaylistData): Promise<
       ownerId: playlistData.ownerId,
       name: playlistData.name,
       description: playlistData.description,
-      imageUrl: playlistData.imageUrl,
       trackCount: 0,
       createdAt: now,
       updatedAt: now,
@@ -157,16 +156,14 @@ export async function getPlaylistsByOwner(ownerId: string): Promise<DatabaseResu
  */
 export async function updatePlaylist(
   playlistId: string,
-  updateData: Partial<Pick<Playlist, 'name' | 'description' | 'imageUrl' | 'trackCount' | 'isActive'>>
+  updateData: Partial<Pick<Playlist, 'name' | 'description' | 'trackCount' | 'isActive'>>
 ): Promise<DatabaseResult<void>> {
   try {
     const playlistRef = doc(db, COLLECTIONS.PLAYLISTS, playlistId)
-    
     await updateDoc(playlistRef, {
       ...updateData,
       updatedAt: serverTimestamp(),
     })
-    
     return {
       success: true,
     }
