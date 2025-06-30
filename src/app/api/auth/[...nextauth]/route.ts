@@ -1,11 +1,7 @@
-/**
- * @fileoverview NextAuth API route for Spotify OAuth authentication.
- *
- * Handles user login, session, and callback logic for SMAS using Spotify as the provider.
- */
 import NextAuth from 'next-auth'
 import SpotifyProvider from 'next-auth/providers/spotify'
 import type { NextAuthOptions } from 'next-auth'
+import type { Session, User } from 'next-auth'
 
 const scopes = [
   'user-top-read',
@@ -16,9 +12,7 @@ const scopes = [
 ].join(' ')
 
 /**
- * @description Refreshes the Spotify access token using the refresh token.
- * @param {string} refreshToken - The refresh token to use.
- * @returns {Promise<any>} The new token response.
+ * Refresh the Spotify access token using the refresh token.
  */
 async function refreshAccessToken(refreshToken: string) {
   try {
@@ -55,9 +49,9 @@ async function refreshAccessToken(refreshToken: string) {
 }
 
 /**
- * @description NextAuth configuration for Spotify OAuth.
+ * NextAuth configuration for Spotify OAuth.
  */
-const handler = NextAuth({
+export const authOptions: NextAuthOptions = {
   providers: [
     SpotifyProvider({
       clientId: process.env.SPOTIFY_CLIENT_ID!,
@@ -73,35 +67,60 @@ const handler = NextAuth({
   },
   callbacks: {
     async jwt({ token, account, user }) {
-      // Initial sign in
       if (account && user) {
         return {
           accessToken: account.access_token,
           refreshToken: account.refresh_token,
           accessTokenExpires: account.expires_at! * 1000,
-          user,
+          user: {
+            name: user.name,
+            email: user.email,
+            image: user.image,
+          },
           sub: account.providerAccountId,
         }
       }
 
-      // Return previous token if the access token has not expired yet
       if (Date.now() < (token.accessTokenExpires as number)) {
         return token
       }
 
-      // Access token has expired, try to update it
-      return refreshAccessToken(token.refreshToken as string)
+      const refreshed = await refreshAccessToken(token.refreshToken as string)
+
+      if ('error' in refreshed) {
+        return {
+          ...token,
+          error: 'RefreshAccessTokenError',
+        }
+      }
+
+      return {
+        ...token,
+        accessToken: refreshed.accessToken,
+        refreshToken: refreshed.refreshToken,
+        accessTokenExpires: refreshed.accessTokenExpires,
+      }
     },
+
     async session({ session, token }) {
-      // Send properties to the client
+      const user = token.user as User | undefined
+
       session.user.id = token.sub as string
+      session.user.name = user?.name ?? null
+      session.user.email = user?.email ?? null
+      session.user.image = user?.image ?? null
       session.accessToken = token.accessToken as string
-      ;(session as any).error = token.error as string
+      ;(session as any).error = token.error
+
+      console.log("sessionLOHHHHH")
+      console.log(session)
 
       return session
     },
   },
   debug: process.env.NODE_ENV === 'development',
-} as NextAuthOptions)
+}
 
-export { handler as GET, handler as POST } 
+// 🔁 NextAuth API handler
+const handler = NextAuth(authOptions)
+export { handler as GET, handler as POST }

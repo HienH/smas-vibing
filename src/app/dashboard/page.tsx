@@ -6,13 +6,14 @@
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { DashboardContent } from '@/components/dashboard/dashboard-content'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route' // adjust path if needed
 
 /**
  * @description Renders the dashboard page with authentication check.
  * @returns {Promise<JSX.Element>} The dashboard page or redirect to login.
  */
 export default async function DashboardPage() {
-  const session = await getServerSession()
+  const session = await getServerSession(authOptions)
 
   // Check if we have a session at all
   if (!session) {

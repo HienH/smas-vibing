@@ -6,18 +6,19 @@
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { LoginButton } from '../components/auth/login-button'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route' // adjust path if needed
 
 /**
  * @description Renders the landing page with authentication check.
  * @returns {Promise<JSX.Element>} The landing page or redirect to dashboard.
  */
 export default async function HomePage() {
-  const session = await getServerSession()
-
+  const session = await getServerSession(authOptions)
   // Check if user is authenticated by looking for basic user info
   if (session?.user?.email) {
     redirect('/dashboard')
   }
+
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-green-50 to-white px-4">

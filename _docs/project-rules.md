@@ -429,3 +429,41 @@ __tests__/
 ---
 
 This document serves as the definitive guide for all development work on the SMAS project. All team members should follow these standards to maintain code quality and ensure the success of our AI-first codebase. 
+
+### Documentation Simplification Guidelines
+
+**@fileoverview Comments:**
+- Maximum 2-3 sentences
+- Focus on purpose, not implementation
+- Use simple, direct language
+- Remove "Key responsibilities" lists
+
+**Function Documentation:**
+- 1-2 sentence descriptions
+- Essential parameters and return values only
+- Remove verbose examples unless absolutely necessary
+- Remove redundant @throws unless critical
+
+**Code Comments:**
+- Explain "why" not "what"
+- Remove obvious comments
+- Simple, direct language
+- No redundant explanations
+
+**Naming Conventions:**
+- Use descriptive file and function names
+- Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError)
+- Follow consistent naming patterns
+
+**Avoid These Phrases:**
+- "comprehensive", "robust", "enhanced", "optimized"
+- "provides proper", "handles various", "comprehensive error handling"
+- Verbose error handling descriptions
+- Complex technical explanations
+- Redundant functionality descriptions
+
+**Target Style:**
+- Direct and scannable
+- Purpose-focused
+- Minimal but informative
+- Easy to scan and understand quickly
