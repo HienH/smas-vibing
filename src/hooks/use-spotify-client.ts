@@ -26,7 +26,7 @@ export function useSpotifyClient() {
     setError(false)
 
     try {
-      const response = await fetch('/api/spotify/top-songs')
+      const response = await fetch('/api/spotify/users/top-songs')
       
       if (response.status === 401) {
         // Token expired, redirect to login
@@ -60,7 +60,7 @@ export function useSpotifyClient() {
     setError(false)
 
     try {
-      const response = await fetch('/api/spotify/playlist', {
+      const response = await fetch('/api/spotify/playlists', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })

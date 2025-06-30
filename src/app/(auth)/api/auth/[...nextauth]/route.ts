@@ -2,21 +2,16 @@ import NextAuth from 'next-auth'
 import SpotifyProvider from 'next-auth/providers/spotify'
 import type { NextAuthOptions } from 'next-auth'
 import type { Session, User } from 'next-auth'
-
-const scopes = [
-  'user-top-read',
-  'playlist-modify-public',
-  'playlist-read-private',
-  'user-read-email',
-  'user-library-read',
-].join(' ')
+import { SPOTIFY_CONFIG, API_ENDPOINTS } from '@/lib/constants'
 
 /**
- * Refresh the Spotify access token using the refresh token.
+ * @description Refreshes the Spotify access token using the refresh token.
+ * @param {string} refreshToken - The refresh token to use.
+ * @returns {Promise<any>} The refreshed token data or error.
  */
 async function refreshAccessToken(refreshToken: string) {
   try {
-    const response = await fetch('https://accounts.spotify.com/api/token', {
+    const response = await fetch(API_ENDPOINTS.spotify.token, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -49,7 +44,7 @@ async function refreshAccessToken(refreshToken: string) {
 }
 
 /**
- * NextAuth configuration for Spotify OAuth.
+ * @description NextAuth configuration for Spotify OAuth.
  */
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -57,7 +52,7 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.SPOTIFY_CLIENT_ID!,
       clientSecret: process.env.SPOTIFY_CLIENT_SECRET!,
       authorization: {
-        params: { scope: scopes },
+        params: { scope: SPOTIFY_CONFIG.scopes },
       },
     }),
   ],
@@ -111,9 +106,6 @@ export const authOptions: NextAuthOptions = {
       session.user.image = user?.image ?? null
       session.accessToken = token.accessToken as string
       ;(session as any).error = token.error
-
-      console.log("sessionLOHHHHH")
-      console.log(session)
 
       return session
     },

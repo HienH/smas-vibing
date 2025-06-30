@@ -1,7 +1,7 @@
 /**
- * @fileoverview SessionProvider - Client component wrapper for NextAuth SessionProvider.
+ * @fileoverview Session provider component for NextAuth session management.
  *
- * Enables session management throughout the SMAS application.
+ * Wraps the NextAuth SessionProvider with additional configuration and error handling.
  */
 'use client'
 
@@ -12,13 +12,16 @@ interface SessionProviderProps {
 }
 
 /**
- * @description Client-side session provider for NextAuth.
+ * @description Client-side session provider for NextAuth with enhanced configuration.
  * @param {SessionProviderProps} props - Component props.
  * @returns {JSX.Element} The session provider component.
  */
 export function SessionProvider({ children }: SessionProviderProps) {
   return (
-    <NextAuthSessionProvider>
+    <NextAuthSessionProvider
+      refetchInterval={5 * 60} // Refetch session every 5 minutes
+      refetchOnWindowFocus={true}
+    >
       {children}
     </NextAuthSessionProvider>
   )

@@ -467,3 +467,62 @@ This document serves as the definitive guide for all development work on the SMA
 - Purpose-focused
 - Minimal but informative
 - Easy to scan and understand quickly
+
+
+## 🔄 Refactoring Standards
+
+### Pre-Refactoring Checklist
+Before making any structural changes (file moves, renames, API endpoint changes, etc.):
+
+1. **Search for all references** using semantic and regex search:
+   ```bash
+   # Search for imports, API calls, and references
+   grep -r "old-name" src/ --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx"
+   grep -r "old/path" src/ --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx"
+   ```
+
+2. **Identify affected files** by searching for:
+   - Direct imports (`import from 'old/path'`)
+   - API endpoint calls (`fetch('/api/old/endpoint')`)
+   - Type imports (`import type { OldType }`)
+   - Component references (`<OldComponent />`)
+   - Function calls (`oldFunction()`)
+   - Configuration references (`oldConfig`)
+
+3. **Document the changes** in a checklist:
+   - [ ] File moved from `old/path` to `new/path`
+   - [ ] API endpoint changed from `/api/old` to `/api/new`
+   - [ ] Import paths updated in X files
+   - [ ] Type definitions updated
+   - [ ] Configuration references updated
+
+### Refactoring Process
+1. **Make structural changes** (move/rename files)
+2. **Update all imports** in affected files
+3. **Update API endpoints** in client code
+4. **Update type references**
+5. **Update configuration files**
+6. **Test the changes** by running the application
+7. **Verify no broken imports** or 404 errors
+
+### Post-Refactoring Verification
+After refactoring, verify:
+- [ ] No TypeScript compilation errors
+- [ ] No runtime errors in browser console
+- [ ] All API endpoints return expected responses
+- [ ] All imports resolve correctly
+- [ ] No 404 errors for moved routes
+- [ ] Application builds successfully
+
+### Common Refactoring Patterns
+- **File moves**: Update all import paths
+- **API route changes**: Update all fetch calls
+- **Component renames**: Update all JSX references
+- **Type renames**: Update all type imports
+- **Configuration changes**: Update all config references
+
+### Tools for Verification
+- Use `grep` or `ripgrep` for text search
+- Use TypeScript compiler for type checking
+- Use Next.js build process for route verification
+- Use browser dev tools for runtime error checking

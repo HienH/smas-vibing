@@ -1,13 +1,13 @@
 /**
- * @fileoverview DashboardContent - Main dashboard component with playlist management and sharing.
+ * @fileoverview Dashboard content component for the main user interface.
  *
- * Handles user's SMAS playlist, top 5 songs display, sharing link generation, and contributor tracking.
+ * Handles playlist management, top songs display, and sharing functionality.
  */
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { Button } from '@/components/ui/button'
+import { LoadingSpinner, ErrorMessage } from '@/components/ui'
 import { PlaylistCard } from '@/components/playlist/playlist-card'
 import { TopSongsCard } from '@/components/playlist/top-songs-card'
 import { ShareLinkCard } from '@/components/sharing/share-link-card'
@@ -28,11 +28,10 @@ export function DashboardContent() {
     const initializeDashboard = async () => {
       if (session?.user) {
         try {
-          // Fetch user's top 5 songs
-          await fetchTopSongs()
-          
-          // Create or get existing SMAS playlist
-          await createPlaylist()
+          await Promise.all([
+            fetchTopSongs(),
+            createPlaylist()
+          ])
         } catch (error) {
           console.error('Failed to initialize dashboard:', error)
         } finally {
@@ -44,13 +43,17 @@ export function DashboardContent() {
     initializeDashboard()
   }, [session, createPlaylist, fetchTopSongs])
 
+  const handleRetry = () => {
+    window.location.reload()
+  }
+
   if (isInitializing) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Setting up your SMAS playlist...</p>
-        </div>
+        <LoadingSpinner 
+          size="lg" 
+          text="Setting up your SMAS playlist..." 
+        />
       </div>
     )
   }
@@ -58,12 +61,10 @@ export function DashboardContent() {
   if (hasError) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <p className="text-red-600">Failed to load your playlist. Please try again.</p>
-          <Button onClick={() => window.location.reload()} className="mt-4">
-            Retry
-          </Button>
-        </div>
+        <ErrorMessage 
+          message="Failed to load your playlist. Please try again."
+          onRetry={handleRetry}
+        />
       </div>
     )
   }

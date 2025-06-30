@@ -1,5 +1,5 @@
 /**
- * @fileoverview ShareLinkCard - Displays the sharing link and copy functionality.
+ * @fileoverview Share link card component for displaying sharing functionality.
  *
  * Shows the user's unique sharing link with copy-to-clipboard functionality.
  */
@@ -7,7 +7,7 @@
 
 import { useState } from 'react'
 import { usePlaylistStore } from '@/stores/playlist-store'
-import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardContent, Button, LoadingSpinner } from '@/components/ui'
 
 /**
  * @description Renders the sharing link card with copy functionality.
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 export function ShareLinkCard() {
   const { playlist } = usePlaylistStore()
   const [hasCopied, setHasCopied] = useState(false)
+  const [copyError, setCopyError] = useState(false)
 
   const handleCopy = async () => {
     if (!playlist?.shareLink) return
@@ -23,65 +24,83 @@ export function ShareLinkCard() {
     try {
       await navigator.clipboard.writeText(playlist.shareLink)
       setHasCopied(true)
+      setCopyError(false)
       setTimeout(() => setHasCopied(false), 2000)
     } catch (error) {
       console.error('Failed to copy link:', error)
+      setCopyError(true)
+      setTimeout(() => setCopyError(false), 3000)
     }
   }
 
   if (!playlist) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Share Your Playlist</h2>
-        <p className="text-gray-600">Creating your sharing link...</p>
-      </div>
+      <Card>
+        <CardHeader>
+          <h2 className="text-xl font-semibold text-gray-800">Share Your Playlist</h2>
+        </CardHeader>
+        <CardContent>
+          <LoadingSpinner size="sm" text="Creating your sharing link..." />
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">Share Your Playlist</h2>
+    <Card>
+      <CardHeader>
+        <h2 className="text-xl font-semibold text-gray-800">Share Your Playlist</h2>
+      </CardHeader>
       
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Your Sharing Link
-          </label>
-          <div className="flex space-x-2">
-            <input
-              type="text"
-              value={playlist.shareLink}
-              readOnly
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm"
-            />
-            <Button
-              onClick={handleCopy}
-              variant="outline"
-              size="sm"
-              className="whitespace-nowrap"
-            >
-              {hasCopied ? 'Copied!' : 'Copy'}
-            </Button>
+      <CardContent>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Your Sharing Link
+            </label>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={playlist.shareLink}
+                readOnly
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm"
+                aria-label="Sharing link"
+              />
+              <Button
+                onClick={handleCopy}
+                variant="outline"
+                size="sm"
+                className="whitespace-nowrap"
+                aria-label={hasCopied ? "Link copied" : "Copy link"}
+              >
+                {hasCopied ? 'Copied!' : 'Copy'}
+              </Button>
+            </div>
+            {copyError && (
+              <p className="mt-1 text-sm text-red-600">
+                Failed to copy. Please try again.
+              </p>
+            )}
+          </div>
+
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-green-800 mb-2">
+              How it works
+            </h3>
+            <ul className="text-sm text-green-700 space-y-1">
+              <li>• Share this link with your friends</li>
+              <li>• They'll add their top 5 songs to your playlist</li>
+              <li>• You can contribute back to their playlists too!</li>
+            </ul>
+          </div>
+
+          <div className="text-center">
+            <p className="text-sm text-gray-600">
+              Friends can contribute once every 4 weeks
+            </p>
           </div>
         </div>
-
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-green-800 mb-2">
-            How it works
-          </h3>
-          <ul className="text-sm text-green-700 space-y-1">
-            <li>• Share this link with your friends</li>
-            <li>• They'll add their top 5 songs to your playlist</li>
-            <li>• You can contribute back to their playlists too!</li>
-          </ul>
-        </div>
-
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            Friends can contribute once every 4 weeks
-          </p>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 } 
