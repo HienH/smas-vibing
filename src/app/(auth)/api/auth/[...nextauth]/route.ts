@@ -1,8 +1,12 @@
 import NextAuth from 'next-auth'
 import SpotifyProvider from 'next-auth/providers/spotify'
+import { FirestoreAdapter } from '@next-auth/firebase-adapter'
 import type { NextAuthOptions } from 'next-auth'
 import type { Session, User } from 'next-auth'
 import { SPOTIFY_CONFIG, API_ENDPOINTS } from '@/lib/constants'
+import { adminAdapterConfig } from '@/lib/firebaseAdmin'
+import { upsertUser } from '@/services/firebase/users'
+import { Timestamp } from 'firebase/firestore'
 
 /**
  * @description Refreshes the Spotify access token using the refresh token.
@@ -44,7 +48,7 @@ async function refreshAccessToken(refreshToken: string) {
 }
 
 /**
- * @description NextAuth configuration for Spotify OAuth.
+ * @description NextAuth configuration for Spotify OAuth with Firebase Admin SDK adapter.
  */
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -56,11 +60,37 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+  adapter: FirestoreAdapter(adminAdapterConfig),
   secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: 'jwt',
   },
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === 'spotify' && user) {
+        try {
+          // Store user data in Firestore
+          const expiresAt = account.expires_at 
+            ? Timestamp.fromMillis(account.expires_at * 1000)
+            : undefined
+
+          await upsertUser({
+            id: user.id,
+            displayName: user.name ?? '',
+            email: user.email ?? '',
+            imageUrl: user.image ?? undefined,
+            spotifyAccessToken: account.access_token,
+            spotifyRefreshToken: account.refresh_token,
+            spotifyTokenExpiresAt: expiresAt,
+          })
+        } catch (error) {
+          console.error('Failed to store user data:', error)
+          // Don't block sign in if Firestore fails
+        }
+      }
+      return true
+    },
+
     async jwt({ token, account, user }) {
       if (account && user) {
         return {
