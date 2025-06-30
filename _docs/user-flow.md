@@ -25,8 +25,8 @@
 
 3. **Account Creation & Setup**
    - Store Spotify ID, tokens, display name, email
-   - Fetch user's top 5 songs via Spotify API
-   - Create "SMAS" playlist in user's Spotify account
+   - Fetch user's top 5 songs via Spotify API (for display only)
+   - Create "SMAS" playlist in user's Spotify account (starts empty)
    - Store playlist ID in database
    - Generate unique public sharing link
 
@@ -65,7 +65,7 @@
    - Display songs with artist names
 
 2. **Playlist Creation**
-   - Create "SMAS" playlist in user's Spotify account
+   - Create "SMAS" playlist in user's Spotify account (starts empty)
    - Store playlist ID in database
 
 3. **Playlist Customization** (Phase 2)
@@ -132,7 +132,7 @@
    - List all contributing friends (Spotify usernames)
 
 2. **User's Top 5 Display**
-   - Show user's own top 5 songs
+   - Show user's own top 5 songs (displayed separately from playlist)
    - Allow regeneration/refresh (Phase 2)
 
 3. **Sharing Link Management**

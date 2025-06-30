@@ -5,14 +5,12 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { LoadingSpinner, ErrorMessage } from '@/components/ui'
 import { PlaylistCard } from '@/components/playlist/playlist-card'
 import { TopSongsCard } from '@/components/playlist/top-songs-card'
 import { ShareLinkCard } from '@/components/sharing/share-link-card'
-import { usePlaylistStore } from '@/stores/playlist-store'
-import { useSpotifyClient } from '@/hooks/use-spotify-client'
+import { useDashboardData } from '@/hooks/use-dashboard-data'
 
 /**
  * @description Renders the main dashboard content with playlist and sharing functionality.
@@ -20,32 +18,7 @@ import { useSpotifyClient } from '@/hooks/use-spotify-client'
  */
 export function DashboardContent() {
   const { data: session } = useSession()
-  const { playlist, isLoading, hasError } = usePlaylistStore()
-  const { createPlaylist, fetchTopSongs } = useSpotifyClient()
-  const [isInitializing, setIsInitializing] = useState(true)
-
-  useEffect(() => {
-    const initializeDashboard = async () => {
-      if (session?.user) {
-        try {
-          await Promise.all([
-            fetchTopSongs(),
-            createPlaylist()
-          ])
-        } catch (error) {
-          console.error('Failed to initialize dashboard:', error)
-        } finally {
-          setIsInitializing(false)
-        }
-      }
-    }
-
-    initializeDashboard()
-  }, [session, createPlaylist, fetchTopSongs])
-
-  const handleRetry = () => {
-    window.location.reload()
-  }
+  const { isInitializing, hasError, handleRetry } = useDashboardData(session?.user?.id)
 
   if (isInitializing) {
     return (

@@ -94,17 +94,8 @@ export const mockSpotifyData = {
   smasPlaylist: {
     id: 'smas-playlist-id',
     name: 'SMAS Playlist',
-    songs: [
-      {
-        id: '1',
-        name: 'Test Song 1',
-        artist: 'Test Artist 1',
-        album: 'Test Album 1',
-        imageUrl: 'https://example.com/image1.jpg',
-        contributorId: 'user1'
-      }
-    ],
-    contributors: ['user1'],
+    songs: [],
+    contributors: [],
     shareLink: 'https://smas.app/share/smas-playlist-id'
   }
 } 

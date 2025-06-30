@@ -53,7 +53,7 @@ export function PlaylistCard() {
           <div className="text-center py-8">
             <p className="text-gray-600 mb-2">Your playlist is empty</p>
             <p className="text-sm text-gray-500">
-              Share your link with friends to start collecting songs!
+              Share your link with friends to start collecting their favorite songs!
             </p>
           </div>
         ) : (

@@ -1,7 +1,7 @@
 /**
  * @fileoverview Top songs card component for displaying user's top 5 songs.
  *
- * Shows the user's personal top tracks that form the basis of their SMAS playlist.
+ * Shows the user's personal top tracks for display purposes only.
  */
 'use client'
 

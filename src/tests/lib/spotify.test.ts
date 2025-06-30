@@ -139,6 +139,65 @@ describe('Spotify API Functions', () => {
       )
       expect(result).toEqual(mockResponse)
     })
+
+    it('should create playlist without adding tracks', async () => {
+      const mockResponse = mockSpotifyData.createdPlaylist
+      ;(fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockResponse)
+      })
+
+      const result = await createPlaylist(
+        mockAccessToken,
+        mockUserId,
+        'SMAS',
+        'A collaborative playlist created with Send Me a Song',
+        true
+      )
+
+      // Verify that only the playlist creation was called, not track addition
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(fetch).toHaveBeenCalledWith(
+        `https://api.spotify.com/v1/users/${mockUserId}/playlists`,
+        expect.any(Object)
+      )
+      expect(result).toEqual(mockResponse)
+    })
+
+    it('should not create duplicate playlists with same name', async () => {
+      const mockResponse = mockSpotifyData.createdPlaylist
+      ;(fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockResponse)
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockResponse)
+        })
+
+      // First creation
+      const result1 = await createPlaylist(
+        mockAccessToken,
+        mockUserId,
+        'SMAS',
+        'A collaborative playlist created with Send Me a Song',
+        true
+      )
+
+      // Second creation with same name - should not create duplicate
+      const result2 = await createPlaylist(
+        mockAccessToken,
+        mockUserId,
+        'SMAS',
+        'A collaborative playlist created with Send Me a Song',
+        true
+      )
+
+      // Both should return the same playlist data
+      expect(result1).toEqual(result2)
+      expect(result1.id).toBe(mockResponse.id)
+    })
   })
 
   describe('addTracksToPlaylist', () => {

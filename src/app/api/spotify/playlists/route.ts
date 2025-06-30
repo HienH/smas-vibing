@@ -7,9 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { 
   getUserPlaylists, 
   createPlaylist, 
-  addTracksToPlaylist, 
   getPlaylistTracks,
-  getTopTracks,
   SpotifyAPIError 
 } from '@/lib/spotify'
 import { validateApiRequest } from '@/lib/auth'
@@ -48,15 +46,11 @@ export async function POST(request: NextRequest) {
         true
       )
       
-      // Add user's top 5 songs to the playlist
-      const topTracksData = await getTopTracks(accessToken)
-      const trackUris = topTracksData.items.map((track: any) => `spotify:track:${track.id}`)
-      
-      if (trackUris.length > 0) {
-        await addTracksToPlaylist(accessToken, smasPlaylist.id, trackUris)
-      }
+      // Playlist starts empty - songs will be added by friend contributions only
+      smasPlaylist.tracks = { items: [] }
     } else {
       // If playlist exists, fetch its current tracks
+      console.log(`Using existing SMAS playlist ${smasPlaylist.id} for user ${userId}`)
       const playlistTracks = await getPlaylistTracks(accessToken, smasPlaylist.id)
       smasPlaylist.tracks = playlistTracks
     }

@@ -13,7 +13,7 @@ Make music sharing fun, personal, and frictionless.
 
 Build a viral loop around personalized playlists.
 
-Leverage Spotify’s API for song discovery and playlist generation.
+Leverage Spotify's API for song discovery and playlist generation.
 
 Success Metrics:
 % of users who receive at least 1 friend contribution.
@@ -65,9 +65,9 @@ Fetch display name + email.
 
 ✅ 5.2. Generate SMAS Playlist
 MVP:
-Fetch user’s top 5 via user-top-read.
+Fetch user's top 5 via user-top-read (for display only, not for playlist).
 
-Create one playlist named "SMAS" in their Spotify.
+Create one playlist named "SMAS" in their Spotify (starts empty).
 
 Store playlist ID in DB.
 
@@ -101,19 +101,19 @@ Friend logs in via link.
 
 Fetch their top 5.
 
-Check if they’ve already contributed (within 4 weeks).
+Check if they've already contributed (within 4 weeks).
 
-Add songs to inviter’s existing SMAS playlist.
+Add songs to inviter's existing SMAS playlist.
 
 Filter out any duplicate tracks already in that playlist.
 
 ✅ At end:
-“You've just sent your top songs to [User A] 🎶 Want their favorite tracks back in your own playlist?”
+"You've just sent your top songs to [User A] 🎶 Want their favorite tracks back in your own playlist?"
 
 Phase 2:
 Friend match preview.
 
-Suggest songs from inviter’s playlist.
+Suggest songs from inviter's playlist.
 
 ✅ 5.5. Dashboard
 MVP:
@@ -123,11 +123,11 @@ Track name, artist, and contributor (if account exists).
 
 List of contributing friends (Spotify usernames).
 
-Show user’s own top 5.
+Show user's own top 5.
 
 Generate invite link.
 
-“Remove songs from [Friend]” button.
+"Remove songs from [Friend]" button.
 
 Soft spam indicator (e.g., flag unknown contributors for review).
 
@@ -178,9 +178,9 @@ Apple Music support.
 📋 7. Edge Cases & Error Handling
 Case	Handling
 User has no top tracks	Show message encouraging more Spotify activity.
-Contributor has already sent songs	Block and show cooldown window (e.g., “Try again in 18 days”).
+Contributor has already sent songs	Block and show cooldown window (e.g., "Try again in 18 days").
 Contributor adds duplicate tracks	Silently skip duplicates.
-Playlist deleted	Prompt: “Recreate your SMAS playlist?”
+Playlist deleted	Prompt: "Recreate your SMAS playlist?"
 Spotify permission revoked	Disable Spotify-linked actions; prompt reconnect.
 Spam or misuse (MVP level)	Limit by Spotify ID; rate-limit requests server-side.
 
