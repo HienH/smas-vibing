@@ -1,0 +1,32 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+ALWAYS use the COLLECTIONS constant from @/types/firebase.ts for Firestore collection names.
+NEVER hardcode collection names in API routes or components.
+Example: Use COLLECTIONS.SHARING_LINKS, not 'sharingLinks' or 'sharing_links'.
+When querying Firestore documents:
+- If you have the document ID: use .doc(id).get()
+- If you need to query by a field: use .where('field', '==', value).get()
+- ALWAYS check the existing service functions in @/services/firebase/ before writing new queries
+Before implementing API routes:
+1. Check existing service functions in @/services/firebase/ for the correct patterns
+2. Verify collection names using COLLECTIONS constant
+3. Use the same query patterns as existing client-side code
+4. Test with actual Firestore data structure
+ALWAYS use TypeScript interfaces from @/types/firebase.ts for:
+- Database result types (DatabaseResult<T>)
+- Collection names (COLLECTIONS)
+- Data structures (UserProfile, Playlist, SharingLink, etc.)
+Before creating API routes:
+□ Check existing service functions for patterns
+□ Use correct collection names from COLLECTIONS
+□ Verify query methods match client-side code
+□ Test with real Firestore data
+□ Use proper error handling and status codes
+ALWAYS reference the actual Firestore schema when:
+- Writing queries
+- Creating API routes
+- Adding new fields
+- Migrating data structures

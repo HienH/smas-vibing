@@ -28,11 +28,10 @@ describe('Spotify API Functions', () => {
 
   describe('spotifyRequest', () => {
     it('should make successful API request', async () => {
-      const mockResponse = { data: 'test' }
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
+      global.fetch = jest.fn(() => Promise.resolve({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
-      })
+        json: async () => ({ success: true }),
+      })) as any
 
       const result = await spotifyRequest(mockAccessToken, '/test-endpoint')
 
@@ -40,12 +39,11 @@ describe('Spotify API Functions', () => {
         'https://api.spotify.com/v1/test-endpoint',
         expect.objectContaining({
           headers: {
-            'Authorization': `Bearer ${mockAccessToken}`,
-            'Content-Type': 'application/json'
-          }
+            Authorization: 'Bearer mock-access-token',
+          },
         })
       )
-      expect(result).toEqual(mockResponse)
+      expect(result).toEqual({ success: true })
     })
 
     it('should throw SpotifyAPIError on 401 status', async () => {

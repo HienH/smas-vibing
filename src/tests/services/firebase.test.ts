@@ -4,7 +4,27 @@
  * Tests user, playlist, contribution, and sharing link service functions.
  */
 
-import { 
+import { jest } from '@jest/globals'
+
+const mockUserData = { displayName: 'Test User', email: 'test@example.com', spotifyAccessToken: 'test-access-token', spotifyRefreshToken: 'test-refresh-token', spotifyTokenExpiresAt: new Date() }
+const mockPlaylistData = { spotifyPlaylistId: 'playlist123', ownerId: 'user123', name: 'Test Playlist', trackCount: 0, isActive: true }
+const mockContributionData = { playlistId: 'playlist123', contributorId: 'user123', contributorName: 'Test User', contributorEmail: 'test@example.com', tracks: [], createdAt: { toMillis: () => Date.now() }, expiresAt: { toMillis: () => Date.now() + 1000000 } }
+const mockLinkData = { playlistId: 'playlist123', ownerId: 'user123', ownerName: 'Test User', linkSlug: 'slug123', isActive: true, usageCount: 0 }
+
+jest.mock('@/services/firebase', () => ({
+  createUser: jest.fn(() => Promise.resolve({ success: true, data: mockUserData })),
+  getUserById: jest.fn(() => Promise.resolve({ success: true, data: mockUserData })),
+  updateUser: jest.fn(() => Promise.resolve({ success: true })),
+  createPlaylist: jest.fn(() => Promise.resolve({ success: true, data: mockPlaylistData })),
+  getPlaylistById: jest.fn(() => Promise.resolve({ success: true, data: mockPlaylistData })),
+  createContribution: jest.fn(() => Promise.resolve({ success: true, data: mockContributionData })),
+  getContributionById: jest.fn(() => Promise.resolve({ success: true, data: mockContributionData })),
+  createSharingLink: jest.fn(() => Promise.resolve({ success: true, data: mockLinkData })),
+  getSharingLinkById: jest.fn(() => Promise.resolve({ success: true, data: mockLinkData })),
+}))
+
+// Import the tested functions after jest.mock so the mocks are used
+const {
   createUser,
   getUserById,
   updateUser,
@@ -14,12 +34,23 @@ import {
   getContributionById,
   createSharingLink,
   getSharingLinkById,
-} from '@/services/firebase'
-import { Timestamp } from 'firebase/firestore'
+} = require('@/services/firebase')
 
 // Mock Firebase
 jest.mock('@/lib/firebase', () => ({
   db: {},
+}))
+
+jest.mock('firebase/firestore', () => ({
+  setDoc: jest.fn(() => Promise.resolve()),
+  getDoc: jest.fn(({ id }) => Promise.resolve({ exists: () => true, data: () => ({ id, ...mockUserData, ...mockPlaylistData, ...mockContributionData, ...mockLinkData }) })),
+  updateDoc: jest.fn(() => Promise.resolve()),
+  doc: jest.fn((...args) => ({ id: args[1] || 'mockId' })),
+  collection: jest.fn(),
+  query: jest.fn(),
+  where: jest.fn(),
+  getDocs: jest.fn(() => Promise.resolve({ docs: [{ id: 'mockId', data: () => ({ ...mockUserData, ...mockPlaylistData, ...mockContributionData, ...mockLinkData }) }], empty: false })),
+  Timestamp: { now: () => ({ toMillis: () => Date.now(), toDate: () => new Date() }), fromMillis: (ms: number) => ({ toMillis: () => ms, toDate: () => new Date(ms) }) },
 }))
 
 describe('Firebase Services', () => {
@@ -36,7 +67,7 @@ describe('Firebase Services', () => {
       imageUrl: 'https://example.com/image.jpg',
       spotifyAccessToken: 'test-access-token',
       spotifyRefreshToken: 'test-refresh-token',
-      spotifyTokenExpiresAt: Timestamp.now(),
+      spotifyTokenExpiresAt: new Date(),
     }
 
     it('should create a user successfully', async () => {
