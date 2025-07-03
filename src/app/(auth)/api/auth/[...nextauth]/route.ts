@@ -32,6 +32,12 @@ async function refreshAccessToken(refreshToken: string) {
     const tokens = await response.json()
 
     if (!response.ok) {
+      console.error('❌ Spotify token refresh failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: tokens.error,
+        errorDescription: tokens.error_description
+      })
       throw tokens
     }
 
@@ -41,6 +47,7 @@ async function refreshAccessToken(refreshToken: string) {
       accessTokenExpires: Date.now() + tokens.expires_in * 1000,
     }
   } catch (error) {
+    console.error('💥 Token refresh error:', error)
     return {
       error: 'RefreshAccessTokenError',
     }
@@ -65,8 +72,10 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
   },
+  debug: true,
   callbacks: {
     async signIn({ user, account }) {
+   
       if (account?.provider === 'spotify' && user) {
         try {
           // Store user data in Firestore
@@ -82,9 +91,11 @@ export const authOptions: NextAuthOptions = {
             spotifyAccessToken: account.access_token,
             spotifyRefreshToken: account.refresh_token,
             spotifyTokenExpiresAt: expiresAt,
+            spotifyUserId: account.providerAccountId,
           })
+   
         } catch (error) {
-          console.error('Failed to store user data:', error)
+          console.error('❌ Failed to store user data:', error)
           // Don't block sign in if Firestore fails
         }
       }
@@ -92,7 +103,9 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, account, user }) {
+
       if (account && user) {
+
         return {
           accessToken: account.access_token,
           refreshToken: account.refresh_token,
@@ -128,6 +141,7 @@ export const authOptions: NextAuthOptions = {
     },
 
     async session({ session, token }) {
+
       const user = token.user as User | undefined
 
       session.user.id = token.sub as string
@@ -137,10 +151,18 @@ export const authOptions: NextAuthOptions = {
       session.accessToken = token.accessToken as string
       ;(session as any).error = token.error
 
+
       return session
     },
   },
-  debug: process.env.NODE_ENV === 'development',
+  events: {
+    async signIn(message: any) {
+      console.log('🎉 SignIn event:', message)
+    },
+    async signOut(message: any) {
+      console.log('👋 SignOut event:', message)
+    },
+  }
 }
 
 // 🔁 NextAuth API handler

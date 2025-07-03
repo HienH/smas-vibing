@@ -27,7 +27,7 @@ export function useSpotifyClient() {
 
     try {
       const response = await fetch('/api/spotify/users/top-songs')
-      
+
       if (response.status === 401) {
         // Token expired, redirect to login
         window.location.href = '/'

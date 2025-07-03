@@ -23,6 +23,8 @@ import {
   DatabaseResult, 
   COLLECTIONS 
 } from '@/types/firebase'
+import { getUserBySpotifyUserId, updateUser } from './users'
+import { updatePlaylistSharingLinkId } from './playlists'
 
 /**
  * @description Creates a new sharing link in Firestore.
@@ -37,7 +39,7 @@ export async function createSharingLink(linkData: CreateSharingLinkData): Promis
     const sharingLink: SharingLink = {
       id: linkRef.id,
       playlistId: linkData.playlistId,
-      ownerId: linkData.ownerId,
+      spotifyUserId: linkData.spotifyUserId,
       ownerName: linkData.ownerName,
       linkSlug: linkData.linkSlug,
       isActive: true,
@@ -47,6 +49,15 @@ export async function createSharingLink(linkData: CreateSharingLinkData): Promis
     }
 
     await setDoc(linkRef, sharingLink)
+
+    const userCheck = await getUserBySpotifyUserId(linkData.spotifyUserId)
+      if (userCheck.data) {
+        await updateUser(userCheck.data.id, { 
+          sharingLinkId: linkRef.id
+        })
+    }
+   
+    await updatePlaylistSharingLinkId(linkData.playlistId, linkRef.id)
     
     return {
       success: true,
@@ -150,13 +161,13 @@ export async function getSharingLinksByPlaylist(playlistId: string): Promise<Dat
 
 /**
  * @description Retrieves all sharing links owned by a user.
- * @param {string} ownerId - Spotify user ID.
+ * @param {string} spotifyUserId - Spotify user ID.
  * @returns {Promise<DatabaseResult<SharingLink[]>>} User's sharing links or error.
  */
-export async function getSharingLinksByOwner(ownerId: string): Promise<DatabaseResult<SharingLink[]>> {
+export async function getSharingLinksByOwner(spotifyUserId: string): Promise<DatabaseResult<SharingLink[]>> {
   try {
     const linksRef = collection(db, COLLECTIONS.SHARING_LINKS)
-    const q = query(linksRef, where('ownerId', '==', ownerId), where('isActive', '==', true))
+    const q = query(linksRef, where('spotifyUserId', '==', spotifyUserId), where('isActive', '==', true))
     const querySnapshot = await getDocs(q)
     
     const sharingLinks: SharingLink[] = querySnapshot.docs.map(doc => ({

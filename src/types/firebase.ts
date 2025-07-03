@@ -10,7 +10,8 @@ import { Timestamp } from 'firebase/firestore'
  * @description User profile data stored in Firestore.
  */
 export interface UserProfile {
-  id: string // Spotify ID
+  id: string // Spotify ID from OAuth (document ID)
+  spotifyUserId?: string // Spotify user ID of playlist owner (from playlist creation)
   displayName: string
   email: string
   imageUrl?: string
@@ -19,6 +20,8 @@ export interface UserProfile {
   spotifyAccessToken?: string
   spotifyRefreshToken?: string
   spotifyTokenExpiresAt?: Timestamp
+  playlistId?: string // Firestore playlist ID owned by user
+  sharingLinkId?: string // Firestore sharing link ID owned by user
 }
 
 /**
@@ -27,13 +30,14 @@ export interface UserProfile {
 export interface Playlist {
   id: string // Firestore document ID
   spotifyPlaylistId: string // Spotify playlist ID
-  ownerId: string // Spotify user ID
+  spotifyUserId: string // Spotify user ID
   name: string
   description?: string
   trackCount: number
   createdAt: Timestamp
   updatedAt: Timestamp
   isActive: boolean
+  sharingLinkId?: string // Firestore sharing link ID for this playlist
 }
 
 /**
@@ -68,7 +72,7 @@ export interface ContributionTrack {
 export interface SharingLink {
   id: string // Firestore document ID
   playlistId: string // Firestore playlist ID
-  ownerId: string // Spotify user ID
+  spotifyUserId: string // Spotify user ID
   ownerName: string
   linkSlug: string // Unique identifier for the link
   isActive: boolean
@@ -125,12 +129,14 @@ export interface DatabaseResult<T> {
  */
 export interface CreateUserData {
   id: string
+  spotifyUserId?: string // Spotify user ID of playlist owner (from playlist creation)
   displayName: string
   email: string
   imageUrl?: string
   spotifyAccessToken?: string
   spotifyRefreshToken?: string
   spotifyTokenExpiresAt?: Timestamp
+  playlistId?: string // Firestore playlist ID owned by user
 }
 
 /**
@@ -138,7 +144,7 @@ export interface CreateUserData {
  */
 export interface CreatePlaylistData {
   spotifyPlaylistId: string
-  ownerId: string
+  spotifyUserId: string // Spotify user ID
   name: string
   description?: string
   imageUrl?: string
@@ -160,7 +166,7 @@ export interface CreateContributionData {
  */
 export interface CreateSharingLinkData {
   playlistId: string
-  ownerId: string
+  spotifyUserId: string
   ownerName: string
   linkSlug: string
 } 

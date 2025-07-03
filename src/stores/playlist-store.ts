@@ -20,6 +20,7 @@ export interface Playlist {
   songs: Song[]
   contributors: string[]
   shareLink: string
+  firestoreId?: string
 }
 
 interface PlaylistState {

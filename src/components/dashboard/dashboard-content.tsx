@@ -10,6 +10,8 @@ import { LoadingSpinner, ErrorMessage } from '@/components/ui'
 import { PlaylistCard } from '@/components/playlist/playlist-card'
 import { TopSongsCard } from '@/components/playlist/top-songs-card'
 import { ShareLinkCard } from '@/components/sharing/share-link-card'
+import { DashboardMetrics } from '@/components/dashboard/dashboard-metrics'
+import { ActivityTimeline } from '@/components/dashboard/activity-timeline'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
 
 /**
@@ -18,7 +20,7 @@ import { useDashboardData } from '@/hooks/use-dashboard-data'
  */
 export function DashboardContent() {
   const { data: session } = useSession()
-  const { isInitializing, hasError, handleRetry } = useDashboardData(session?.user?.id)
+  const { isInitializing, hasError, handleRetry, contributions, shareLinkUsage } = useDashboardData(session?.user?.id)
 
   if (isInitializing) {
     return (
@@ -42,6 +44,9 @@ export function DashboardContent() {
     )
   }
 
+  // Calculate total tracks from contributions
+  const totalTracks = contributions.reduce((sum, contribution) => sum + contribution.tracks.length, 0)
+
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="mb-8">
@@ -53,13 +58,21 @@ export function DashboardContent() {
         </p>
       </header>
 
+      {/* Dashboard Metrics */}
+      <DashboardMetrics 
+        contributions={contributions}
+        totalTracks={totalTracks}
+        shareLinkUsage={shareLinkUsage}
+      />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">
-          <PlaylistCard />
+          <PlaylistCard contributions={contributions} />
           <TopSongsCard />
         </div>
-        <div>
+        <div className="space-y-6">
           <ShareLinkCard />
+          <ActivityTimeline contributions={contributions} />
         </div>
       </div>
     </div>

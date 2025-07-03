@@ -25,7 +25,6 @@ export async function GET(request: NextRequest) {
 
     // Fetch top tracks from Spotify API
     const topTracksData = await getTopTracks(accessToken)
-    
     // Transform Spotify data to SMAS format
     const songs: Song[] = topTracksData.items.map((track: any) => ({
       id: track.id,

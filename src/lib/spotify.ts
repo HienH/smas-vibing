@@ -32,13 +32,25 @@ export async function spotifyRequest(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<any> {
+
   const response = await fetch(`https://api.spotify.com/v1${endpoint}`, {
     ...options,
     headers: {
-      ...(options.headers || {}),
       Authorization: `Bearer ${accessToken}`,
+      ...(options.headers || {})
     },
   })
+
+  // Debug: Log the raw response text
+  const text = await response.text()
+
+  let data
+  try {
+    data = JSON.parse(text)
+  } catch (e) {
+    console.error('Failed to parse Spotify response as JSON:', text)
+    throw e
+  }
 
   // Special case: image upload returns 202 and no body
   if (endpoint.endsWith('/images')) {
@@ -54,13 +66,11 @@ export async function spotifyRequest(
     throw new SpotifyAPIError('TOKEN_EXPIRED', 401, 'TOKEN_EXPIRED')
   }
 
-  // Try to parse JSON for all other endpoints
-  const data = await response.json()
   if (!response.ok) {
     throw new SpotifyAPIError(
       data.error?.message || 'Spotify API error',
       response.status,
-      data.error?.status
+      data
     )
   }
   return data

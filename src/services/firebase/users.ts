@@ -10,7 +10,11 @@ import {
   getDoc, 
   updateDoc, 
   serverTimestamp,
-  Timestamp 
+  Timestamp,
+  collection,
+  query,
+  where,
+  getDocs
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { 
@@ -25,7 +29,7 @@ import {
  * @param {CreateUserData} userData - User data to create.
  * @returns {Promise<DatabaseResult<UserProfile>>} Creation result.
  */
-export async function createUser(userData: CreateUserData): Promise<DatabaseResult<UserProfile>> {
+export async function createUser(userData: CreateUserData & { playlistId?: string, sharingLinkId?: string }): Promise<DatabaseResult<UserProfile>> {
   try {
     const now = Timestamp.now()
     const userRef = doc(db, COLLECTIONS.USERS, userData.id)
@@ -40,6 +44,8 @@ export async function createUser(userData: CreateUserData): Promise<DatabaseResu
       spotifyTokenExpiresAt: userData.spotifyTokenExpiresAt,
       createdAt: now,
       updatedAt: now,
+      ...(userData.playlistId ? { playlistId: userData.playlistId } : {}),
+      ...(userData.spotifyUserId ? { spotifyUserId: userData.spotifyUserId } : {}),
     }
 
     await setDoc(userRef, userProfile)
@@ -58,12 +64,12 @@ export async function createUser(userData: CreateUserData): Promise<DatabaseResu
 
 /**
  * @description Retrieves a user profile by Spotify ID.
- * @param {string} userId - Spotify user ID.
+ * @param {string} spotifyUserId - Spotify user ID.
  * @returns {Promise<DatabaseResult<UserProfile>>} User profile or error.
  */
-export async function getUserById(userId: string): Promise<DatabaseResult<UserProfile>> {
+export async function getUserById(spotifyUserId: string): Promise<DatabaseResult<UserProfile>> {
   try {
-    const userRef = doc(db, COLLECTIONS.USERS, userId)
+    const userRef = doc(db, COLLECTIONS.USERS, spotifyUserId)
     const userSnap = await getDoc(userRef)
     
     if (!userSnap.exists()) {
@@ -93,7 +99,7 @@ export async function getUserById(userId: string): Promise<DatabaseResult<UserPr
  */
 export async function updateUser(
   userId: string, 
-  updateData: Partial<Pick<UserProfile, 'displayName' | 'email' | 'imageUrl' | 'spotifyAccessToken' | 'spotifyRefreshToken' | 'spotifyTokenExpiresAt'>>
+  updateData: Partial<Pick<UserProfile, 'displayName' | 'email' | 'imageUrl' | 'spotifyAccessToken' | 'spotifyRefreshToken' | 'spotifyTokenExpiresAt' | 'playlistId' | 'sharingLinkId' | 'spotifyUserId'>>
 ): Promise<DatabaseResult<void>> {
   try {
     const userRef = doc(db, COLLECTIONS.USERS, userId)
@@ -149,7 +155,7 @@ export async function updateUserTokens(
  * @param {CreateUserData} userData - User data from Spotify.
  * @returns {Promise<DatabaseResult<UserProfile>>} User profile result.
  */
-export async function upsertUser(userData: CreateUserData): Promise<DatabaseResult<UserProfile>> {
+export async function upsertUser(userData: CreateUserData & { playlistId?: string, sharingLinkId?: string }): Promise<DatabaseResult<UserProfile>> {
   try {
     const existingUser = await getUserById(userData.id)
     
@@ -162,6 +168,8 @@ export async function upsertUser(userData: CreateUserData): Promise<DatabaseResu
         spotifyAccessToken: userData.spotifyAccessToken,
         spotifyRefreshToken: userData.spotifyRefreshToken,
         spotifyTokenExpiresAt: userData.spotifyTokenExpiresAt,
+        ...(userData.playlistId ? { playlistId: userData.playlistId } : {}),
+        ...(userData.spotifyUserId ? { spotifyUserId: userData.spotifyUserId } : {}),
       })
       
       if (updateResult.success) {
@@ -183,6 +191,37 @@ export async function upsertUser(userData: CreateUserData): Promise<DatabaseResu
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to upsert user',
+    }
+  }
+}
+
+/**
+ * @description Retrieves a user profile by Spotify user ID field.
+ * @param {string} spotifyUserId - Spotify user ID from the spotifyUserId field.
+ * @returns {Promise<DatabaseResult<UserProfile>>} User profile or error.
+ */
+export async function getUserBySpotifyUserId(spotifyUserId: string): Promise<DatabaseResult<UserProfile>> {
+  try {
+    const usersRef = collection(db, COLLECTIONS.USERS)
+    const q = query(usersRef, where('spotifyUserId', '==', spotifyUserId))
+    const querySnapshot = await getDocs(q)
+    
+    if (querySnapshot.empty) {
+      return {
+        success: false,
+        error: 'User not found',
+      }
+    }
+    
+    const userDoc = querySnapshot.docs[0]
+    return {
+      success: true,
+      data: { id: userDoc.id, ...userDoc.data() } as UserProfile,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get user by Spotify user ID',
     }
   }
 } 

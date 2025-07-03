@@ -85,8 +85,8 @@ export const useFirebase = () => {
     return await getPlaylistById(playlistId)
   }, [])
 
-  const getUserPlaylists = useCallback(async (ownerId: string): Promise<DatabaseResult<Playlist[]>> => {
-    return await getPlaylistsByOwner(ownerId)
+  const getUserPlaylists = useCallback(async (spotifyUserId: string): Promise<DatabaseResult<Playlist[]>> => {
+    return await getPlaylistsByOwner(spotifyUserId)
   }, [])
 
   const updatePlaylistTracks = useCallback(async (playlistId: string, trackCount: number): Promise<DatabaseResult<void>> => {
@@ -115,8 +115,8 @@ export const useFirebase = () => {
     return await getSharingLinkBySlug(linkSlug)
   }, [])
 
-  const getUserSharingLinks = useCallback(async (ownerId: string): Promise<DatabaseResult<SharingLink[]>> => {
-    return await getSharingLinksByOwner(ownerId)
+  const getUserSharingLinks = useCallback(async (spotifyUserId: string): Promise<DatabaseResult<SharingLink[]>> => {
+    return await getSharingLinksByOwner(spotifyUserId)
   }, [])
 
   const trackLinkUsage = useCallback(async (linkId: string): Promise<DatabaseResult<void>> => {

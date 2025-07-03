@@ -126,7 +126,16 @@ export function ShareLinkContributionPanel({
       }
       // 7. Add tracks to playlist (Spotify API wants URIs)
       const uris = newTracks.map(song => `spotify:track:${song.id}`)
-      await addTracksToPlaylist(session.accessToken, spotifyPlaylistId, uris)
+      // Call backend API to add tracks using the playlist owner's access token
+      const contributeRes = await fetch('/api/spotify/contribute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playlistId, trackUris: uris })
+      })
+      if (!contributeRes.ok) {
+        const errData = await contributeRes.json().catch(() => ({}))
+        throw new Error(errData.error || 'Failed to add tracks to playlist')
+      }
       // 8. Record contribution in Firestore
       await addContribution({
         playlistId,

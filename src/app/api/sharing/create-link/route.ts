@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     // Validate playlist exists and belongs to user
     const playlistResult = await getPlaylistById(playlistId)
-    if (!playlistResult.success || playlistResult.data?.ownerId !== session.user.id) {
+    if (!playlistResult.success || playlistResult.data?.spotifyUserId !== session.user.id) {
       return NextResponse.json({ error: 'Invalid playlist' }, { status: 400 })
     }
 
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     // Create sharing link
     const linkData: CreateSharingLinkData = {
       playlistId,
-      ownerId: session.user.id,
+      spotifyUserId: session.user.id,
       ownerName: resolvedOwnerName,
       linkSlug: slugResult.data,
     }

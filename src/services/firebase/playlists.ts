@@ -23,13 +23,14 @@ import {
   DatabaseResult, 
   COLLECTIONS 
 } from '@/types/firebase'
+import { updateUser, getUserBySpotifyUserId } from './users'
 
 /**
  * @description Creates a new playlist in Firestore.
  * @param {CreatePlaylistData} playlistData - Playlist data to create.
  * @returns {Promise<DatabaseResult<Playlist>>} Creation result.
  */
-export async function createPlaylist(playlistData: CreatePlaylistData): Promise<DatabaseResult<Playlist>> {
+export async function createPlaylist(playlistData: CreatePlaylistData & { sharingLinkId?: string }): Promise<DatabaseResult<Playlist>> {
   try {
     const now = Timestamp.now()
     const playlistRef = doc(collection(db, COLLECTIONS.PLAYLISTS))
@@ -37,17 +38,26 @@ export async function createPlaylist(playlistData: CreatePlaylistData): Promise<
     const playlist: Playlist = {
       id: playlistRef.id,
       spotifyPlaylistId: playlistData.spotifyPlaylistId,
-      ownerId: playlistData.ownerId,
+      spotifyUserId: playlistData.spotifyUserId,
       name: playlistData.name,
       description: playlistData.description,
       trackCount: 0,
       createdAt: now,
       updatedAt: now,
       isActive: true,
+      ...(playlistData.sharingLinkId ? { sharingLinkId: playlistData.sharingLinkId } : {}),
     }
 
     await setDoc(playlistRef, playlist)
     
+    // Find user by spotifyUserId and update their playlistId
+    const userCheck = await getUserBySpotifyUserId(playlistData.spotifyUserId)
+    if (userCheck.success && userCheck.data) {
+      await updateUser(userCheck.data.id, { 
+        playlistId: playlistRef.id
+      })
+    }
+  
     return {
       success: true,
       data: playlist,
@@ -122,13 +132,13 @@ export async function getPlaylistBySpotifyId(spotifyPlaylistId: string): Promise
 
 /**
  * @description Retrieves all playlists owned by a user.
- * @param {string} ownerId - Spotify user ID.
+ * @param {string} spotifyUserId - Spotify user ID.
  * @returns {Promise<DatabaseResult<Playlist[]>>} User's playlists or error.
  */
-export async function getPlaylistsByOwner(ownerId: string): Promise<DatabaseResult<Playlist[]>> {
+export async function getPlaylistsByOwner(spotifyUserId: string): Promise<DatabaseResult<Playlist[]>> {
   try {
     const playlistsRef = collection(db, COLLECTIONS.PLAYLISTS)
-    const q = query(playlistsRef, where('ownerId', '==', ownerId), where('isActive', '==', true))
+    const q = query(playlistsRef, where('spotifyUserId', '==', spotifyUserId), where('isActive', '==', true))
     const querySnapshot = await getDocs(q)
     
     const playlists: Playlist[] = querySnapshot.docs.map(doc => ({
@@ -156,7 +166,7 @@ export async function getPlaylistsByOwner(ownerId: string): Promise<DatabaseResu
  */
 export async function updatePlaylist(
   playlistId: string,
-  updateData: Partial<Pick<Playlist, 'name' | 'description' | 'trackCount' | 'isActive'>>
+  updateData: Partial<Pick<Playlist, 'name' | 'description' | 'trackCount' | 'isActive' | 'sharingLinkId'>>
 ): Promise<DatabaseResult<void>> {
   try {
     const playlistRef = doc(db, COLLECTIONS.PLAYLISTS, playlistId)
@@ -219,4 +229,17 @@ export async function getOrCreatePlaylist(playlistData: CreatePlaylistData): Pro
       error: error instanceof Error ? error.message : 'Failed to get or create playlist',
     }
   }
+}
+
+/**
+ * @description Updates playlist with sharingLinkId.
+ * @param {string} playlistId - Firestore playlist ID.
+ * @param {string} sharingLinkId - Firestore sharing link ID.
+ * @returns {Promise<DatabaseResult<void>>} Update result.
+ */
+export async function updatePlaylistSharingLinkId(
+  playlistId: string,
+  sharingLinkId: string
+): Promise<DatabaseResult<void>> {
+  return await updatePlaylist(playlistId, { sharingLinkId })
 } 

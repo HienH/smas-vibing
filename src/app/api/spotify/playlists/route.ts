@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     // 4. Upsert playlist metadata in Firestore
     const firestoreResult = await getOrCreatePlaylist({
       spotifyPlaylistId: smasPlaylist.id,
-      ownerId: userId,
+      spotifyUserId: userId,
       name: smasPlaylist.name,
       description: smasPlaylist.description,
     })
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       if (slugResult.success && typeof slugResult.data === 'string') {
         const linkResult = await createSharingLink({
           playlistId: firestoreResult.data.id,
-          ownerId: userId,
+          spotifyUserId: session.user.id,
           ownerName: session.user.name || 'User',
           linkSlug: slugResult.data,
         })
@@ -120,6 +120,7 @@ export async function POST(request: NextRequest) {
       })) || [],
       contributors: [],
       shareLink,
+      firestoreId: firestoreResult.success && firestoreResult.data ? firestoreResult.data.id : undefined,
     }
 
     return NextResponse.json(playlist)

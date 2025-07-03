@@ -4,13 +4,18 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { usePlaylistStore } from '@/stores/playlist-store'
 import { useSession } from 'next-auth/react'
+import { useFirebase } from '@/hooks/use-firebase'
+import { Contribution } from '@/types/firebase'
 
 export const useDashboardData = (userId?: string) => {
   const { setTopSongs, setPlaylist, setLoading, setError } = usePlaylistStore()
   const [isInitializing, setIsInitializing] = useState(true)
   const [hasError, setHasError] = useState(false)
+  const [contributions, setContributions] = useState<Contribution[]>([])
+  const [shareLinkUsage, setShareLinkUsage] = useState(0)
   const hasInitialized = useRef(false)
   const { data: session } = useSession()
+  const { getPlaylistContributions, getUserSharingLinks } = useFirebase()
 
   const handleRetry = useCallback(() => {
     hasInitialized.current = false
@@ -44,7 +49,23 @@ export const useDashboardData = (userId?: string) => {
             playlist = await playlistResponse.json()
           }
 
-          if (isMounted && playlist) setPlaylist(playlist)
+          if (isMounted && playlist) {
+            setPlaylist(playlist)
+
+            // Fetch contributions for this playlist
+            const contribRes = await getPlaylistContributions(playlist.firestoreId || '')
+            
+            if (contribRes.success && Array.isArray(contribRes.data)) {
+              setContributions(contribRes.data)
+            }
+
+            // Fetch share link usage
+            const linksRes = await getUserSharingLinks(userId)
+            if (linksRes.success && linksRes.data && linksRes.data.length > 0) {
+              const totalUsage = linksRes.data.reduce((sum, link) => sum + (link.usageCount || 0), 0)
+              setShareLinkUsage(totalUsage)
+            }
+          }
         } catch (error) {
           if (isMounted) setHasError(true)
         } finally {
@@ -63,7 +84,7 @@ export const useDashboardData = (userId?: string) => {
     return () => {
       isMounted = false
     }
-  }, [userId, setTopSongs, setPlaylist, setLoading, setError, session?.user?.name])
+  }, [userId, setTopSongs, setPlaylist, setLoading, setError, session?.user?.name, getPlaylistContributions, getUserSharingLinks])
 
   useEffect(() => {
     if (!userId) {
@@ -73,5 +94,5 @@ export const useDashboardData = (userId?: string) => {
     }
   }, [userId])
 
-  return { isInitializing, hasError, handleRetry }
+  return { isInitializing, hasError, handleRetry, contributions, shareLinkUsage }
 } 

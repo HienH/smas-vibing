@@ -37,7 +37,6 @@ export const auth = getAuth(app)
 if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true') {
   try {
     connectFirestoreEmulator(db, 'localhost', 8080)
-    connectAuthEmulator(auth, 'http://localhost:9099')
   } catch (error) {
     console.warn('Firebase emulator already connected')
   }
