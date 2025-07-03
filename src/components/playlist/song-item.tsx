@@ -53,13 +53,13 @@ export function SongItem({ song }: SongItemProps) {
         </p>
       </div>
 
-      {song.contributorId && (
+      {song.contributorName && (
         <div className="flex-shrink-0">
           <span 
             className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
-            aria-label={`Contributed by ${song.contributorId}`}
+            aria-label={`Contributed by ${song.contributorName}`}
           >
-            {song.contributorId}
+            {song.contributorName}
           </span>
         </div>
       )}

@@ -115,8 +115,9 @@ export function ShareLinkContributionPanel({
         setState(s => ({ ...s, isContributing: false, noTopTracks: true }))
         return
       }
-      // 5. Fetch all tracks in owner's playlist
+      // 5. Fetch all tracks in owner's spotify smas playlist
       const playlistTracksData = await getPlaylistTracks(session.accessToken, spotifyPlaylistId)
+
       const existingIds = new Set((playlistTracksData.items || []).map((item: any) => item.track?.id))
       // 6. Deduplicate
       const newTracks = topSongs.filter(song => !existingIds.has(song.id))

@@ -25,9 +25,8 @@ interface PlaylistCardProps {
 export function PlaylistCard({ contributions }: PlaylistCardProps) {
   const { playlist, isLoading } = usePlaylistStore()
 
-  // Aggregate all tracks with contributor attribution
   const allTracks = useMemo(() => {
-    const tracks = contributions.flatMap(contribution =>
+    const contributedSongs = contributions.flatMap(contribution =>
       contribution.tracks.map(track => ({
         ...track,
         id: track.spotifyTrackId,
@@ -37,19 +36,22 @@ export function PlaylistCard({ contributions }: PlaylistCardProps) {
         contributedAt: contribution.createdAt,
       }))
     )
-    return tracks
-  }, [contributions])
+
+    return [...contributedSongs]
+  }, [playlist, contributions])
 
   // Build unique contributors list
   const contributors = useMemo(() => {
-    const list = contributions.map(c => ({
+    // Add contributors from Firestore
+    const contributionList = contributions.map(c => ({
       id: c.contributorId,
       name: c.contributorName,
       date: c.createdAt,
     }))
       .sort((a, b) => b.date.toMillis() - a.date.toMillis())
-    return list
-  }, [contributions])
+    
+    return [...contributionList]
+  }, [playlist, contributions])
 
   const [selectedContributor, setSelectedContributor] = useState<string | null>(null)
 
@@ -91,6 +93,7 @@ export function PlaylistCard({ contributions }: PlaylistCardProps) {
       <CardContent>
         {/* Contributor Filter Dropdown */}
         <div className="mb-4 flex items-center gap-2">
+          Filter by contributors: 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -121,9 +124,15 @@ export function PlaylistCard({ contributions }: PlaylistCardProps) {
         {/* Playlist Tracks */}
         {filteredTracks.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-600 mb-2">No songs found for this contributor.</p>
+            <p className="text-gray-600 mb-2">
+              {selectedContributor 
+                ? "No songs found for this contributor." 
+                : "No songs in your playlist yet."}
+            </p>
             <p className="text-sm text-gray-500">
-              Share your link with friends to start collecting their favorite songs!
+              {selectedContributor 
+                ? "This contributor hasn't added any songs yet."
+                : "Share your link with friends to start collecting their favorite songs!"}
             </p>
           </div>
         ) : (
@@ -146,10 +155,12 @@ export function PlaylistCard({ contributions }: PlaylistCardProps) {
                   <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
                     {contributor.name}
                   </span>
-                  <span className="text-xs text-gray-500">
-                    {format(contributor.date.toDate(), 'MMM d, yyyy, h:mm a')}
-                </span>
-            </div>
+                  {contributor.date && (
+                    <span className="text-xs text-gray-500">
+                      {format(contributor.date.toDate(), 'MMM d, yyyy, h:mm a')}
+                    </span>
+                  )}
+                </div>
               ))
             )}
           </div>
