@@ -32,7 +32,7 @@ describe('ShareLinkContributionPanel', () => {
   })
 
   it('renders loading state', () => {
-    baseFirebase.getSharingLink.mockReturnValue(new Promise(() => {}))
+    baseFirebase.getSharingLink.mockReturnValue(new Promise(() => { }))
     render(
       <ShareLinkContributionPanel
         linkSlug="testslug"
@@ -64,8 +64,9 @@ describe('ShareLinkContributionPanel', () => {
         addTracksToPlaylist={addTracksToPlaylist}
       />
     )
-    await screen.findByText(/link not found/i)
+    await screen.findByRole('heading', { name: /sorry link not found/i })
     expect(screen.getByText(/invalid or expired sharing link/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /go to home/i })).toBeInTheDocument()
   })
 
   it('renders default state for valid link', async () => {
@@ -83,7 +84,7 @@ describe('ShareLinkContributionPanel', () => {
         addTracksToPlaylist={addTracksToPlaylist}
       />
     )
-    await screen.findByText(/send your top songs to Alice/i)
+    await screen.findByRole('heading', { name: /send alice your favourite songs/i })
     expect(screen.getByRole('button', { name: /add your top songs/i })).toBeInTheDocument()
   })
 
@@ -106,7 +107,7 @@ describe('ShareLinkContributionPanel', () => {
     )
     await screen.findByRole('button', { name: /add your top songs/i })
     fireEvent.click(screen.getByRole('button', { name: /add your top songs/i }))
-    await screen.findByText(/already contributed/i)
+    await screen.findByRole('heading', { name: /already contributed/i })
     expect(screen.getByText(/can contribute again in/i)).toBeInTheDocument()
   })
 
@@ -114,7 +115,7 @@ describe('ShareLinkContributionPanel', () => {
     baseFirebase.getSharingLink.mockResolvedValue({ success: true, data: { isActive: true, ownerName: 'Alice', id: 'pid', playlistId: 'plid' } })
     baseFirebase.getPlaylist.mockResolvedValue({ success: true, data: { spotifyPlaylistId: 'spid' } })
     baseFirebase.checkContribution.mockResolvedValue({ success: true, data: { hasContributed: false } })
-    ;(global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => [] })
+      ; (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => [] })
     render(
       <ShareLinkContributionPanel
         linkSlug="testslug"
@@ -130,14 +131,15 @@ describe('ShareLinkContributionPanel', () => {
     )
     await screen.findByRole('button', { name: /add your top songs/i })
     fireEvent.click(screen.getByRole('button', { name: /add your top songs/i }))
-    await screen.findByText(/no top songs found/i)
+    await screen.findByRole('heading', { name: /no top songs found on spotify/i })
+    expect(screen.getByRole('button', { name: /go to home/i })).toBeInTheDocument()
   })
 
   it('shows all duplicates state', async () => {
     baseFirebase.getSharingLink.mockResolvedValue({ success: true, data: { isActive: true, ownerName: 'Alice', id: 'pid', playlistId: 'plid' } })
     baseFirebase.getPlaylist.mockResolvedValue({ success: true, data: { spotifyPlaylistId: 'spid' } })
     baseFirebase.checkContribution.mockResolvedValue({ success: true, data: { hasContributed: false } })
-    ;(global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => [{ id: 't1', name: 'Song', artist: 'A', album: 'B' }] })
+      ; (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => [{ id: 't1', name: 'Song', artist: 'A', album: 'B' }] })
     getPlaylistTracks.mockResolvedValue({ items: [{ track: { id: 't1' } }] })
     render(
       <ShareLinkContributionPanel
@@ -154,7 +156,8 @@ describe('ShareLinkContributionPanel', () => {
     )
     await screen.findByRole('button', { name: /add your top songs/i })
     fireEvent.click(screen.getByRole('button', { name: /add your top songs/i }))
-    await screen.findByText(/all songs already added/i)
+    await screen.findByRole('heading', { name: /all your top songs are already added/i })
+    expect(screen.getByRole('button', { name: /go to home/i })).toBeInTheDocument()
   })
 
   it('shows success state after contribution', async () => {
@@ -162,7 +165,7 @@ describe('ShareLinkContributionPanel', () => {
     baseFirebase.getPlaylist.mockResolvedValue({ success: true, data: { spotifyPlaylistId: 'spid' } })
     baseFirebase.checkContribution.mockResolvedValue({ success: true, data: { hasContributed: false } })
     baseFirebase.addContribution.mockResolvedValue({ success: true })
-    ;(global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => [{ id: 't2', name: 'Song2', artist: 'A2', album: 'B2' }] })
+      ; (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => [{ id: 't2', name: 'Song2', artist: 'A2', album: 'B2' }] })
     getPlaylistTracks.mockResolvedValue({ items: [] })
     addTracksToPlaylist.mockResolvedValue({})
     render(
@@ -180,7 +183,7 @@ describe('ShareLinkContributionPanel', () => {
     )
     await screen.findByRole('button', { name: /add your top songs/i })
     fireEvent.click(screen.getByRole('button', { name: /add your top songs/i }))
-    await screen.findByText(/success!/i)
+    await screen.findByRole('heading', { name: /success!/i })
     expect(screen.getByText(/just sent your top songs/i)).toBeInTheDocument()
     expect(screen.getByText(/Song2/)).toBeInTheDocument()
   })
@@ -189,7 +192,7 @@ describe('ShareLinkContributionPanel', () => {
     baseFirebase.getSharingLink.mockResolvedValue({ success: true, data: { isActive: true, ownerName: 'Alice', id: 'pid', playlistId: 'plid' } })
     baseFirebase.getPlaylist.mockResolvedValue({ success: true, data: { spotifyPlaylistId: 'spid' } })
     baseFirebase.checkContribution.mockResolvedValue({ success: true, data: { hasContributed: false } })
-    ;(global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'))
+      ; (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'))
     render(
       <ShareLinkContributionPanel
         linkSlug="testslug"
@@ -205,8 +208,9 @@ describe('ShareLinkContributionPanel', () => {
     )
     await screen.findByRole('button', { name: /add your top songs/i })
     fireEvent.click(screen.getByRole('button', { name: /add your top songs/i }))
-    await screen.findByRole('heading', { name: /error/i })
+    await screen.findByRole('heading', { name: /sorry try again later/i })
     expect(screen.getByText(/network error/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
   })
 
   it('disables button during loading', async () => {
@@ -224,7 +228,7 @@ describe('ShareLinkContributionPanel', () => {
         addTracksToPlaylist={addTracksToPlaylist}
       />
     )
-    await screen.findByText(/send your top songs to Alice/i)
+    await screen.findByRole('heading', { name: /send alice your favourite songs/i })
     const btn = screen.getByRole('button', { name: /add your top songs/i })
     fireEvent.click(btn)
     expect(btn).toBeDisabled()

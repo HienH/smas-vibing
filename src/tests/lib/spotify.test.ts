@@ -4,13 +4,13 @@
  * Tests all Spotify API functions with mocked responses.
  */
 
-import { 
-  spotifyRequest, 
-  getTopTracks, 
-  createPlaylist, 
+import {
+  spotifyRequest,
+  getTopTracks,
+  createPlaylist,
   addTracksToPlaylist,
   getPlaylistTracks,
-  SpotifyAPIError 
+  SpotifyAPIError
 } from '@/lib/spotify'
 import { mockSpotifyData } from '@/mocks/spotify-api'
 
@@ -31,6 +31,7 @@ describe('Spotify API Functions', () => {
       global.fetch = jest.fn(() => Promise.resolve({
         ok: true,
         json: async () => ({ success: true }),
+        text: async () => JSON.stringify({ success: true }),
       })) as any
 
       const result = await spotifyRequest(mockAccessToken, '/test-endpoint')
@@ -47,28 +48,30 @@ describe('Spotify API Functions', () => {
     })
 
     it('should throw SpotifyAPIError on 401 status', async () => {
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
+      ; (fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
         status: 401,
-        json: () => Promise.resolve({ error: { message: 'Unauthorized' } })
+        json: () => Promise.resolve({ error: { message: 'Unauthorized' } }),
+        text: () => Promise.resolve(JSON.stringify({ error: { message: 'Unauthorized' } })),
       })
 
       const error = await spotifyRequest(mockAccessToken, '/test-endpoint').catch(e => e)
-      
+
       expect(error).toBeInstanceOf(SpotifyAPIError)
       expect(error.status).toBe(401)
       expect(error.code).toBe('TOKEN_EXPIRED')
     })
 
     it('should throw SpotifyAPIError on other error statuses', async () => {
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
+      ; (fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
         status: 404,
-        json: () => Promise.resolve({ error: { message: 'Not found' } })
+        json: () => Promise.resolve({ error: { message: 'Not found' } }),
+        text: () => Promise.resolve(JSON.stringify({ error: { message: 'Not found' } })),
       })
 
       const error = await spotifyRequest(mockAccessToken, '/test-endpoint').catch(e => e)
-      
+
       expect(error).toBeInstanceOf(SpotifyAPIError)
       expect(error.status).toBe(404)
     })
@@ -77,10 +80,11 @@ describe('Spotify API Functions', () => {
   describe('getTopTracks', () => {
     it('should fetch top tracks with default parameters', async () => {
       const mockResponse = mockSpotifyData.topTracks
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      })
+        ; (fetch as jest.Mock).mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockResponse),
+          text: () => Promise.resolve(JSON.stringify(mockResponse)),
+        })
 
       const result = await getTopTracks(mockAccessToken)
 
@@ -93,10 +97,11 @@ describe('Spotify API Functions', () => {
 
     it('should fetch top tracks with custom parameters', async () => {
       const mockResponse = mockSpotifyData.topTracks
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      })
+        ; (fetch as jest.Mock).mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockResponse),
+          text: () => Promise.resolve(JSON.stringify(mockResponse)),
+        })
 
       const result = await getTopTracks(mockAccessToken, 10, 'long_term')
 
@@ -111,10 +116,11 @@ describe('Spotify API Functions', () => {
   describe('createPlaylist', () => {
     it('should create playlist successfully', async () => {
       const mockResponse = mockSpotifyData.createdPlaylist
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      })
+        ; (fetch as jest.Mock).mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockResponse),
+          text: () => Promise.resolve(JSON.stringify(mockResponse)),
+        })
 
       const result = await createPlaylist(
         mockAccessToken,
@@ -140,10 +146,11 @@ describe('Spotify API Functions', () => {
 
     it('should create playlist without adding tracks', async () => {
       const mockResponse = mockSpotifyData.createdPlaylist
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      })
+        ; (fetch as jest.Mock).mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockResponse),
+          text: () => Promise.resolve(JSON.stringify(mockResponse)),
+        })
 
       const result = await createPlaylist(
         mockAccessToken,
@@ -164,15 +171,17 @@ describe('Spotify API Functions', () => {
 
     it('should not create duplicate playlists with same name', async () => {
       const mockResponse = mockSpotifyData.createdPlaylist
-      ;(fetch as jest.Mock)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve(mockResponse)
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve(mockResponse)
-        })
+        ; (fetch as jest.Mock)
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(mockResponse),
+            text: () => Promise.resolve(JSON.stringify(mockResponse)),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(mockResponse),
+            text: () => Promise.resolve(JSON.stringify(mockResponse)),
+          })
 
       // First creation
       const result1 = await createPlaylist(
@@ -202,11 +211,12 @@ describe('Spotify API Functions', () => {
     it('should add tracks to playlist successfully', async () => {
       const mockResponse = { snapshot_id: 'mock-snapshot-id' }
       const trackUris = ['spotify:track:1', 'spotify:track:2']
-      
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      })
+
+        ; (fetch as jest.Mock).mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockResponse),
+          text: () => Promise.resolve(JSON.stringify(mockResponse)),
+        })
 
       const result = await addTracksToPlaylist(mockAccessToken, mockPlaylistId, trackUris)
 
@@ -224,10 +234,11 @@ describe('Spotify API Functions', () => {
   describe('getPlaylistTracks', () => {
     it('should fetch playlist tracks successfully', async () => {
       const mockResponse = mockSpotifyData.playlistTracks
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      })
+        ; (fetch as jest.Mock).mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockResponse),
+          text: () => Promise.resolve(JSON.stringify(mockResponse)),
+        })
 
       const result = await getPlaylistTracks(mockAccessToken, mockPlaylistId)
 
