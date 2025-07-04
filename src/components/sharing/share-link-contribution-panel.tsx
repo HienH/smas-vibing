@@ -159,7 +159,7 @@ export function ShareLinkContributionPanel({
 
   if (state.isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center mt-30 bg-green-50">
         <LoadingSpinner size="lg" text="Loading sharing link..." />
       </div>
     )
@@ -167,13 +167,14 @@ export function ShareLinkContributionPanel({
 
   if (!state.isValid) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card>
+      <div className="flex text-center justify-center mt-12 bg-green-50">
+        <Card className='lg:w-3xl'>
           <CardHeader>
-            <h2 className="text-xl font-semibold text-red-700">Link Not Found</h2>
+            <h2 className="text-xl font-semibold text-red-700">Sorry Link Not Found</h2>
           </CardHeader>
           <CardContent>
             <p className="mb-4 text-gray-700">{state.error || 'This sharing link is invalid or has expired.'}</p>
+
             <Button onClick={() => window.location.assign('/')} aria-label="Go to home">Go to Home</Button>
           </CardContent>
         </Card>
@@ -183,50 +184,56 @@ export function ShareLinkContributionPanel({
 
   if (state.cooldownDays && state.cooldownDays > 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-green-700 p-6 relative overflow-hidden">
-        <div className="absolute top-10 left-1/2 transform -translate-x-1/2 z-0 opacity-20 pointer-events-none select-none text-center">
-            <h1 className='font-bubble'>
-            SEND ME A SONG h
-          </h1>
+      <div className="flex justify-center text-center mt-12 bg-green-50">
+        <Card className='lg:w-3xl'>
+          <CardHeader>
+            <h2 className="text-xl font-semibold text-yellow-600 mb-4">
+              You've Already Contributed to
+              <span className='text-gray-800'>  {" "}{state.ownerName}'s
+              </span> Playlist
+            </h2>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <p className="text-gray-700 mb-4">
+                You can contribute again in {state.cooldownDays} day{state.cooldownDays > 1 ? 's' : ''} (on {state.cooldownUntil}).
+              </p>
 
-          <span className="font-luckiest text-3xl">
-  Your text here
-</span>
-    </div>
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center relative z-10">
-          <h3 className="text-xl font-semibold text-yellow-600 mb-4">
-            You've Already Contributed to {state.ownerName}'s Playlist
-          </h3>
+              <p className="text-gray-700 mb-6">
+                Interested in finding music from friends? Sign up now to make your own Send Me a Song playlist!
+              </p>
+              <Button
+                onClick={() => window.location.assign('/')}
+                aria-label="Add Your Top Songs"
+                className="w-full"
+                disabled={state.isContributing}
+              >
+                Sign up
 
-          <p className="text-gray-700 mb-4">
-            You can contribute again in {state.cooldownDays} day{state.cooldownDays > 1 ? 's' : ''} (on {state.cooldownUntil}).
-          </p>
-          <p className="text-gray-700 mb-6">
-            Interested in finding music from friends? Sign up now to make your own Send Me a Song playlist!
-          </p>
-          <button
-            onClick={() => window.location.assign('/')}
-            className="bg-green-700 text-white font-bold py-2 px-6 rounded-full hover:bg-yellow-400 hover:text-green-900 transition duration-300"
-            aria-label="Sign up now"
-          >
-            Sign up
-          </button>
-        </div>
+              </Button>
+              <div className="text-center text-sm text-gray-500 mt-2">
+                You&apos;ll be asked to log in with Spotify if you haven&apos;t already.
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+
     )
-    
+
   }
 
   if (state.noTopTracks) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card>
+      <div className="flex text-center justify-center mt-12 bg-green-50">
+        <Card className='lg:w-3xl'>
           <CardHeader>
-            <h2 className="text-xl font-semibold text-gray-700">No Top Songs Found</h2>
+            <h2 className="text-xl font-semibold text-red-700">No Top Songs Found On Spotify</h2>
           </CardHeader>
           <CardContent>
-            <p className="mb-4 text-gray-700">Listen to more music on Spotify to generate your top tracks, then try again!</p>
-            
+            <p className="mb-4 text-gray-700">Listen to more music on Spotify to generate your top songs, then try again!</p>
+
             <Button onClick={() => window.location.assign('/')} aria-label="Go to home">Go to Home</Button>
           </CardContent>
         </Card>
@@ -236,13 +243,17 @@ export function ShareLinkContributionPanel({
 
   if (state.allDuplicates) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card>
+      <div className="flex text-center justify-center mt-12 bg-green-50">
+        <Card className='lg:w-3xl'>
           <CardHeader>
-            <h2 className="text-xl font-semibold text-gray-700">All Songs Already Added</h2>
+            <h2 className="text-xl font-semibold">
+              <span className='text-green-700'>
+                Woo-Hoo! {" "}
+              </span>
+              All Your Top Songs Are Already Added</h2>
           </CardHeader>
           <CardContent>
-            <p className="mb-4 text-gray-700">All your top songs are already in this playlist. Try again in a few weeks!</p>
+            <p className="mb-4 text-gray-700">Your top songs are already in this playlist, try again in a few weeks!</p>
 
             <Button onClick={() => window.location.assign('/')} aria-label="Go to home">Go to Home</Button>
           </CardContent>
@@ -253,8 +264,8 @@ export function ShareLinkContributionPanel({
 
   if (state.isSuccess && state.successTracks) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card>
+      <div className="flex text-center justify-center mt-12 bg-green-50">
+        <Card className='lg:w-3xl'>
           <CardHeader>
             <h2 className="text-xl font-semibold text-green-700">Success!</h2>
           </CardHeader>
@@ -283,10 +294,10 @@ export function ShareLinkContributionPanel({
 
   if (state.error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card>
+      <div className="flex text-center justify-center mt-12 bg-green-50">
+        <Card className='lg:w-3xl'>
           <CardHeader>
-            <h2 className="text-xl font-semibold text-red-700">Error</h2>
+            <h2 className="text-xl font-semibold text-red-700">Sorry Try Again Later</h2>
           </CardHeader>
           <CardContent>
             <p className="mb-4 text-gray-700">{state.error}</p>
@@ -298,17 +309,19 @@ export function ShareLinkContributionPanel({
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <Card>
+    <div className="flex text-center justify-center mt-12 bg-green-50">
+      <Card className='lg:w-3xl'>
         <CardHeader>
-          <h2 className="text-xl font-semibold text-green-700">Send Your Top Songs to {state.ownerName}</h2>
+          <h2 className="text-xl font-semibold text-gray-700 text-center">Send {" "}
+            <span className='text-green-700'>{state.ownerName}{" "}
+            </span>
+            your favourite songs</h2>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
             <p className="text-gray-700">
-              You can contribute your top 5 Spotify songs to {state.ownerName}&apos;s SMAS playlist.
+              Click to send your most played spotify songs to {state.ownerName}&apos;s SMAS playlist.
             </p>
-            
 
             <Button
               onClick={handleContribute}
@@ -316,9 +329,9 @@ export function ShareLinkContributionPanel({
               className="w-full"
               disabled={state.isContributing}
             >
-              {state.isContributing ? <LoadingSpinner size="sm" text="Adding your songs..." /> : 'Add Your Top Songs'}
+              {state.isContributing ? <LoadingSpinner size="sm" text="Adding your songs..." /> : 'Send songs'}
             </Button>
-            <div className="text-center text-sm text-gray-500 mt-4">
+            <div className="text-center text-sm text-gray-500 mt-2">
               You&apos;ll be asked to log in with Spotify if you haven&apos;t already.
             </div>
           </div>

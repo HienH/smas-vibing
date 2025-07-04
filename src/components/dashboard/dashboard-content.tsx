@@ -25,9 +25,9 @@ export function DashboardContent() {
   if (isInitializing) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <LoadingSpinner 
-          size="lg" 
-          text="Setting up your SMAS playlist..." 
+        <LoadingSpinner
+          size="lg"
+          text="Setting up your SMAS playlist..."
         />
       </div>
     )
@@ -36,7 +36,7 @@ export function DashboardContent() {
   if (hasError) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <ErrorMessage 
+        <ErrorMessage
           message="Failed to load your playlist. Please try again."
           onRetry={handleRetry}
         />
@@ -54,13 +54,13 @@ export function DashboardContent() {
           Welcome back, {session?.user?.name}!
         </h1>
         <p className="text-gray-600">
-          Your SMAS playlist is ready to grow with music from friends.
+          Your SMAS playlist is ready. Share you're playlist link with friends
         </p>
       </header>
 
 
       {/* Dashboard Metrics */}
-      <DashboardMetrics 
+      <DashboardMetrics
         contributions={contributions}
         totalTracks={totalTracks}
         shareLinkUsage={shareLinkUsage}
@@ -69,11 +69,12 @@ export function DashboardContent() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">
           <PlaylistCard contributions={contributions} />
-          <TopSongsCard />
         </div>
         <div className="space-y-6">
           <ShareLinkCard />
           <ActivityTimeline contributions={contributions} />
+          <TopSongsCard />
+
         </div>
       </div>
     </div>
