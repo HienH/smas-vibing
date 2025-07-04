@@ -29,13 +29,15 @@ import {
  * @param {CreateUserData} userData - User data to create.
  * @returns {Promise<DatabaseResult<UserProfile>>} Creation result.
  */
-export async function createUser(userData: CreateUserData & { playlistId?: string, sharingLinkId?: string }): Promise<DatabaseResult<UserProfile>> {
+export async function createUser(userData: CreateUserData): Promise<DatabaseResult<UserProfile>> {
   try {
     const now = Timestamp.now()
     const userRef = doc(db, COLLECTIONS.USERS, userData.id)
     
     const userProfile: UserProfile = {
       id: userData.id,
+      spotifyProviderAccountId: userData.spotifyProviderAccountId,
+      spotifyUserId: userData.spotifyUserId,
       displayName: userData.displayName,
       email: userData.email,
       imageUrl: userData.imageUrl,
@@ -44,8 +46,6 @@ export async function createUser(userData: CreateUserData & { playlistId?: strin
       spotifyTokenExpiresAt: userData.spotifyTokenExpiresAt,
       createdAt: now,
       updatedAt: now,
-      ...(userData.playlistId ? { playlistId: userData.playlistId } : {}),
-      ...(userData.spotifyUserId ? { spotifyUserId: userData.spotifyUserId } : {}),
     }
 
     await setDoc(userRef, userProfile)
@@ -93,13 +93,13 @@ export async function getUserById(spotifyUserId: string): Promise<DatabaseResult
 
 /**
  * @description Updates user profile data.
- * @param {string} userId - Spotify user ID.
+ * @param {string} userId - Internal user ID.
  * @param {Partial<UserProfile>} updateData - Data to update.
  * @returns {Promise<DatabaseResult<void>>} Update result.
  */
 export async function updateUser(
   userId: string, 
-  updateData: Partial<Pick<UserProfile, 'displayName' | 'email' | 'imageUrl' | 'spotifyAccessToken' | 'spotifyRefreshToken' | 'spotifyTokenExpiresAt' | 'playlistId' | 'sharingLinkId' | 'spotifyUserId'>>
+  updateData: Partial<Pick<UserProfile, 'displayName' | 'email' | 'imageUrl' | 'spotifyAccessToken' | 'spotifyRefreshToken' | 'spotifyTokenExpiresAt' | 'spotifyUserId' | 'spotifyProviderAccountId'>>
 ): Promise<DatabaseResult<void>> {
   try {
     const userRef = doc(db, COLLECTIONS.USERS, userId)
@@ -155,7 +155,7 @@ export async function updateUserTokens(
  * @param {CreateUserData} userData - User data from Spotify.
  * @returns {Promise<DatabaseResult<UserProfile>>} User profile result.
  */
-export async function upsertUser(userData: CreateUserData & { playlistId?: string, sharingLinkId?: string }): Promise<DatabaseResult<UserProfile>> {
+export async function upsertUser(userData: CreateUserData): Promise<DatabaseResult<UserProfile>> {
   try {
     const existingUser = await getUserById(userData.id)
     
@@ -168,8 +168,8 @@ export async function upsertUser(userData: CreateUserData & { playlistId?: strin
         spotifyAccessToken: userData.spotifyAccessToken,
         spotifyRefreshToken: userData.spotifyRefreshToken,
         spotifyTokenExpiresAt: userData.spotifyTokenExpiresAt,
-        ...(userData.playlistId ? { playlistId: userData.playlistId } : {}),
-        ...(userData.spotifyUserId ? { spotifyUserId: userData.spotifyUserId } : {}),
+        spotifyProviderAccountId: userData.spotifyProviderAccountId,
+        spotifyUserId: userData.spotifyUserId,
       })
       
       if (updateResult.success) {
@@ -196,8 +196,39 @@ export async function upsertUser(userData: CreateUserData & { playlistId?: strin
 }
 
 /**
- * @description Retrieves a user profile by Spotify user ID field.
- * @param {string} spotifyUserId - Spotify user ID from the spotifyUserId field.
+ * @description Retrieves a user profile by Spotify provider account ID (from NextAuth).
+ * @param {string} spotifyProviderAccountId - Spotify provider account ID from NextAuth.
+ * @returns {Promise<DatabaseResult<UserProfile>>} User profile or error.
+ */
+export async function getUserBySpotifyProviderAccountId(spotifyProviderAccountId: string): Promise<DatabaseResult<UserProfile>> {
+  try {
+    const usersRef = collection(db, COLLECTIONS.USERS)
+    const q = query(usersRef, where('spotifyProviderAccountId', '==', spotifyProviderAccountId))
+    const querySnapshot = await getDocs(q)
+    
+    if (querySnapshot.empty) {
+      return {
+        success: false,
+        error: 'User not found',
+      }
+    }
+    
+    const userDoc = querySnapshot.docs[0]
+    return {
+      success: true,
+      data: { id: userDoc.id, ...userDoc.data() } as UserProfile,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get user by Spotify provider account ID',
+    }
+  }
+}
+
+/**
+ * @description Retrieves a user profile by Spotify user ID (from Spotify API).
+ * @param {string} spotifyUserId - Spotify user ID from API.
  * @returns {Promise<DatabaseResult<UserProfile>>} User profile or error.
  */
 export async function getUserBySpotifyUserId(spotifyUserId: string): Promise<DatabaseResult<UserProfile>> {
@@ -222,6 +253,37 @@ export async function getUserBySpotifyUserId(spotifyUserId: string): Promise<Dat
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get user by Spotify user ID',
+    }
+  }
+}
+
+/**
+ * @description Retrieves a user profile by either Spotify provider account ID or Spotify user ID.
+ * @param {string} spotifyId - Either spotifyProviderAccountId or spotifyUserId.
+ * @returns {Promise<DatabaseResult<UserProfile>>} User profile or error.
+ */
+export async function getUserBySpotifyId(spotifyId: string): Promise<DatabaseResult<UserProfile>> {
+  try {
+    // First try to find by spotifyProviderAccountId
+    const providerResult = await getUserBySpotifyProviderAccountId(spotifyId)
+    if (providerResult.success && providerResult.data) {
+      return providerResult
+    }
+    
+    // If not found, try by spotifyUserId
+    const userResult = await getUserBySpotifyUserId(spotifyId)
+    if (userResult.success && userResult.data) {
+      return userResult
+    }
+    
+    return {
+      success: false,
+      error: 'User not found',
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get user by Spotify ID',
     }
   }
 } 

@@ -4,10 +4,13 @@
  * Includes SessionProvider for NextAuth and global styling for the SMAS app.
  */
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Knewave, Geist, Geist_Mono, Luckiest_Guy } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { APP_CONFIG } from "@/lib/constants";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faMusic } from '@fortawesome/free-solid-svg-icons';
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,6 +20,13 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+
+const knewave = Knewave({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-knewave',
 });
 
 export const metadata: Metadata = {
@@ -38,9 +48,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${knewave.variable} antialiased bg-gradient-to-b from-green-50 to-white`}
       >
         <SessionProvider>
+          <div className="w-full flex justify-center px-4 mt-10">
+            <div className="flex items-center gap-3 whitespace-nowrap  max-w-full">
+              <h1 className="font-knewave text-3xl md:text-4xl   lg:text-5xl   text-green-700 leading-tight whitespace-nowrap">
+                SEND ME A SONG
+              </h1>
+              <FontAwesomeIcon
+                icon={faMusic}
+                className=" text-green-700 w-12 h-12 animate-bounce"
+              />
+            </div>
+          </div>
           {children}
         </SessionProvider>
       </body>

@@ -77,6 +77,8 @@ module.exports = {
         success: '#22C55E',
       },
       fontFamily: {
+                bubble: ['Chewy', 'cursive'],
+
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       borderRadius: {

@@ -3,7 +3,6 @@
  */
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { usePlaylistStore } from '@/stores/playlist-store'
-import { useSession } from 'next-auth/react'
 import { useFirebase } from '@/hooks/use-firebase'
 import { Contribution } from '@/types/firebase'
 
@@ -14,8 +13,7 @@ export const useDashboardData = (userId?: string) => {
   const [contributions, setContributions] = useState<Contribution[]>([])
   const [shareLinkUsage, setShareLinkUsage] = useState(0)
   const hasInitialized = useRef(false)
-  const { data: session } = useSession()
-  const { getPlaylistContributions, getUserSharingLinks } = useFirebase()
+  const { getPlaylistContributions, getUserSharingLink } = useFirebase()
 
   const handleRetry = useCallback(() => {
     hasInitialized.current = false
@@ -55,16 +53,15 @@ export const useDashboardData = (userId?: string) => {
 
             // Fetch contributions for this playlist
             const contribRes = await getPlaylistContributions(playlist.firestoreId || '')
-            
+
             if (contribRes.success && Array.isArray(contribRes.data)) {
               setContributions(contribRes.data)
             }
 
             // Fetch share link usage
-            const linksRes = await getUserSharingLinks(userId)
-            if (linksRes.success && linksRes.data && linksRes.data.length > 0) {
-              const totalUsage = linksRes.data.reduce((sum, link) => sum + (link.usageCount || 0), 0)
-              setShareLinkUsage(totalUsage)
+            const linkRes = await getUserSharingLink(userId)
+            if (linkRes.success && linkRes.data) {
+              setShareLinkUsage(linkRes.data.usageCount || 0)
             }
           }
         } catch (error) {
@@ -85,7 +82,7 @@ export const useDashboardData = (userId?: string) => {
     return () => {
       isMounted = false
     }
-  }, [userId, setTopSongs, setPlaylist, setLoading, setError, session?.user?.name, getPlaylistContributions, getUserSharingLinks])
+  }, [userId, setTopSongs, setPlaylist, setLoading, setError, getPlaylistContributions, getUserSharingLink])
 
   useEffect(() => {
     if (!userId) {

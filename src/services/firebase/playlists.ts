@@ -23,7 +23,6 @@ import {
   DatabaseResult, 
   COLLECTIONS 
 } from '@/types/firebase'
-import { updateUser, getUserBySpotifyUserId } from './users'
 
 /**
  * @description Creates a new playlist in Firestore.
@@ -49,14 +48,6 @@ export async function createPlaylist(playlistData: CreatePlaylistData & { sharin
     }
 
     await setDoc(playlistRef, playlist)
-    
-    // Find user by spotifyUserId and update their playlistId
-    const userCheck = await getUserBySpotifyUserId(playlistData.spotifyUserId)
-    if (userCheck.success && userCheck.data) {
-      await updateUser(userCheck.data.id, { 
-        playlistId: playlistRef.id
-      })
-    }
   
     return {
       success: true,

@@ -58,6 +58,7 @@ export function DashboardContent() {
         </p>
       </header>
 
+
       {/* Dashboard Metrics */}
       <DashboardMetrics 
         contributions={contributions}

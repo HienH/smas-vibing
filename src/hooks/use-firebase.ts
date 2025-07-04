@@ -6,7 +6,7 @@
 
 import { useCallback } from 'react'
 import { useSession } from 'next-auth/react'
-import { 
+import {
   upsertUser,
   getUserById,
   updateUserTokens,
@@ -19,11 +19,11 @@ import {
   checkUserContribution,
   createSharingLink,
   getSharingLinkBySlug,
-  getSharingLinksByOwner,
+  getSharingLinkByOwner,
   incrementSharingLinkUsage,
   generateUniqueLinkSlug,
 } from '@/services/firebase'
-import type { 
+import type {
   CreateUserData,
   CreatePlaylistData,
   CreateContributionData,
@@ -102,7 +102,7 @@ export const useFirebase = () => {
     return await getContributionsByPlaylist(playlistId)
   }, [])
 
-  const checkContribution = useCallback(async (playlistId: string, contributorId: string): Promise<DatabaseResult<{hasContributed: boolean, contribution?: Contribution}>> => {
+  const checkContribution = useCallback(async (playlistId: string, contributorId: string): Promise<DatabaseResult<{ hasContributed: boolean, contribution?: Contribution }>> => {
     return await checkUserContribution(playlistId, contributorId)
   }, [])
 
@@ -115,8 +115,8 @@ export const useFirebase = () => {
     return await getSharingLinkBySlug(linkSlug)
   }, [])
 
-  const getUserSharingLinks = useCallback(async (spotifyUserId: string): Promise<DatabaseResult<SharingLink[]>> => {
-    return await getSharingLinksByOwner(spotifyUserId)
+  const getUserSharingLink = useCallback(async (spotifyUserId: string): Promise<DatabaseResult<SharingLink>> => {
+    return await getSharingLinkByOwner(spotifyUserId)
   }, [])
 
   const trackLinkUsage = useCallback(async (linkId: string): Promise<DatabaseResult<void>> => {
@@ -131,27 +131,27 @@ export const useFirebase = () => {
     // Authentication utilities
     getCurrentUserId,
     isAuthenticated,
-    
+
     // User operations
     createUserProfile,
     getUserProfile,
     updateUserSpotifyTokens,
-    
+
     // Playlist operations
     createUserPlaylist,
     getPlaylist,
     getUserPlaylists,
     updatePlaylistTracks,
-    
+
     // Contribution operations
     addContribution,
     getPlaylistContributions,
     checkContribution,
-    
+
     // Sharing link operations
     createSharingLinkForPlaylist,
     getSharingLink,
-    getUserSharingLinks,
+    getUserSharingLink,
     trackLinkUsage,
     generateLinkSlug,
   }

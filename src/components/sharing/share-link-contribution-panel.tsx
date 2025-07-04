@@ -183,18 +183,38 @@ export function ShareLinkContributionPanel({
 
   if (state.cooldownDays && state.cooldownDays > 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card>
-          <CardHeader>
-            <h2 className="text-xl font-semibold text-yellow-700">Already Contributed</h2>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4 text-gray-700">You can contribute again in {state.cooldownDays} day{state.cooldownDays > 1 ? 's' : ''} (on {state.cooldownUntil}).</p>
-            <Button onClick={() => window.location.assign('/')} aria-label="Go to home">Go to Home</Button>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center min-h-screen bg-green-700 p-6 relative overflow-hidden">
+        <div className="absolute top-10 left-1/2 transform -translate-x-1/2 z-0 opacity-20 pointer-events-none select-none text-center">
+            <h1 className='font-bubble'>
+            SEND ME A SONG h
+          </h1>
+
+          <span className="font-luckiest text-3xl">
+  Your text here
+</span>
+    </div>
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center relative z-10">
+          <h3 className="text-xl font-semibold text-yellow-600 mb-4">
+            You've Already Contributed to {state.ownerName}'s Playlist
+          </h3>
+
+          <p className="text-gray-700 mb-4">
+            You can contribute again in {state.cooldownDays} day{state.cooldownDays > 1 ? 's' : ''} (on {state.cooldownUntil}).
+          </p>
+          <p className="text-gray-700 mb-6">
+            Interested in finding music from friends? Sign up now to make your own Send Me a Song playlist!
+          </p>
+          <button
+            onClick={() => window.location.assign('/')}
+            className="bg-green-700 text-white font-bold py-2 px-6 rounded-full hover:bg-yellow-400 hover:text-green-900 transition duration-300"
+            aria-label="Sign up now"
+          >
+            Sign up
+          </button>
+        </div>
       </div>
     )
+    
   }
 
   if (state.noTopTracks) {
@@ -206,6 +226,7 @@ export function ShareLinkContributionPanel({
           </CardHeader>
           <CardContent>
             <p className="mb-4 text-gray-700">Listen to more music on Spotify to generate your top tracks, then try again!</p>
+            
             <Button onClick={() => window.location.assign('/')} aria-label="Go to home">Go to Home</Button>
           </CardContent>
         </Card>
@@ -222,6 +243,7 @@ export function ShareLinkContributionPanel({
           </CardHeader>
           <CardContent>
             <p className="mb-4 text-gray-700">All your top songs are already in this playlist. Try again in a few weeks!</p>
+
             <Button onClick={() => window.location.assign('/')} aria-label="Go to home">Go to Home</Button>
           </CardContent>
         </Card>
@@ -249,7 +271,7 @@ export function ShareLinkContributionPanel({
                 }} />
               ))}
             </div>
-            <Button onClick={() => window.location.assign('/')} aria-label="Go to home" className="mb-2 w-full">Go to Home</Button>
+            {/* <Button onClick={() => window.location.assign('/')} aria-label="Go to home" className="mb-2 w-full">Go to Home</Button> */}
             <div className="text-center text-sm text-gray-500 mt-2">
               Want their favorite tracks back in your own playlist? <br /> <span className="font-medium">Create your own SMAS playlist!</span>
             </div>
@@ -286,6 +308,8 @@ export function ShareLinkContributionPanel({
             <p className="text-gray-700">
               You can contribute your top 5 Spotify songs to {state.ownerName}&apos;s SMAS playlist.
             </p>
+            
+
             <Button
               onClick={handleContribute}
               aria-label="Add Your Top Songs"

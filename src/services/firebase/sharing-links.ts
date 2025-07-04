@@ -4,26 +4,25 @@
  * Handles sharing link creation, retrieval, and usage tracking.
  */
 
-import { 
-  doc, 
-  setDoc, 
-  getDoc, 
-  updateDoc, 
+import {
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
   collection,
   query,
   where,
   getDocs,
   serverTimestamp,
-  Timestamp 
+  Timestamp
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { 
-  SharingLink, 
-  CreateSharingLinkData, 
-  DatabaseResult, 
-  COLLECTIONS 
+import {
+  SharingLink,
+  CreateSharingLinkData,
+  DatabaseResult,
+  COLLECTIONS
 } from '@/types/firebase'
-import { getUserBySpotifyUserId, updateUser } from './users'
 import { updatePlaylistSharingLinkId } from './playlists'
 
 /**
@@ -35,7 +34,7 @@ export async function createSharingLink(linkData: CreateSharingLinkData): Promis
   try {
     const now = Timestamp.now()
     const linkRef = doc(collection(db, COLLECTIONS.SHARING_LINKS))
-    
+
     const sharingLink: SharingLink = {
       id: linkRef.id,
       playlistId: linkData.playlistId,
@@ -50,15 +49,8 @@ export async function createSharingLink(linkData: CreateSharingLinkData): Promis
 
     await setDoc(linkRef, sharingLink)
 
-    const userCheck = await getUserBySpotifyUserId(linkData.spotifyUserId)
-      if (userCheck.data) {
-        await updateUser(userCheck.data.id, { 
-          sharingLinkId: linkRef.id
-        })
-    }
-   
     await updatePlaylistSharingLinkId(linkData.playlistId, linkRef.id)
-    
+
     return {
       success: true,
       data: sharingLink,
@@ -80,14 +72,14 @@ export async function getSharingLinkById(linkId: string): Promise<DatabaseResult
   try {
     const linkRef = doc(db, COLLECTIONS.SHARING_LINKS, linkId)
     const linkSnap = await getDoc(linkRef)
-    
+
     if (!linkSnap.exists()) {
       return {
         success: false,
         error: 'Sharing link not found',
       }
     }
-    
+
     return {
       success: true,
       data: linkSnap.data() as SharingLink,
@@ -110,14 +102,14 @@ export async function getSharingLinkBySlug(linkSlug: string): Promise<DatabaseRe
     const linksRef = collection(db, COLLECTIONS.SHARING_LINKS)
     const q = query(linksRef, where('linkSlug', '==', linkSlug), where('isActive', '==', true))
     const querySnapshot = await getDocs(q)
-    
+
     if (querySnapshot.empty) {
       return {
         success: false,
         error: 'Sharing link not found',
       }
     }
-    
+
     const linkDoc = querySnapshot.docs[0]
     return {
       success: true,
@@ -141,12 +133,12 @@ export async function getSharingLinksByPlaylist(playlistId: string): Promise<Dat
     const linksRef = collection(db, COLLECTIONS.SHARING_LINKS)
     const q = query(linksRef, where('playlistId', '==', playlistId), where('isActive', '==', true))
     const querySnapshot = await getDocs(q)
-    
+
     const sharingLinks: SharingLink[] = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
     })) as SharingLink[]
-    
+
     return {
       success: true,
       data: sharingLinks,
@@ -160,29 +152,32 @@ export async function getSharingLinksByPlaylist(playlistId: string): Promise<Dat
 }
 
 /**
- * @description Retrieves all sharing links owned by a user.
+ * @description Retrieves a single sharing link owned by a user.
  * @param {string} spotifyUserId - Spotify user ID.
- * @returns {Promise<DatabaseResult<SharingLink[]>>} User's sharing links or error.
+ * @returns {Promise<DatabaseResult<SharingLink>>} User's sharing link or error.
  */
-export async function getSharingLinksByOwner(spotifyUserId: string): Promise<DatabaseResult<SharingLink[]>> {
+export async function getSharingLinkByOwner(spotifyUserId: string): Promise<DatabaseResult<SharingLink>> {
   try {
     const linksRef = collection(db, COLLECTIONS.SHARING_LINKS)
     const q = query(linksRef, where('spotifyUserId', '==', spotifyUserId), where('isActive', '==', true))
     const querySnapshot = await getDocs(q)
-    
-    const sharingLinks: SharingLink[] = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as SharingLink[]
-    
+
+    if (querySnapshot.empty) {
+      return {
+        success: false,
+        error: 'Sharing link not found',
+      }
+    }
+
+    const linkDoc = querySnapshot.docs[0]
     return {
       success: true,
-      data: sharingLinks,
+      data: { id: linkDoc.id, ...linkDoc.data() } as SharingLink,
     }
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to get user sharing links',
+      error: error instanceof Error ? error.message : 'Failed to get user sharing link',
     }
   }
 }
@@ -195,16 +190,16 @@ export async function getSharingLinksByOwner(spotifyUserId: string): Promise<Dat
  */
 export async function updateSharingLink(
   linkId: string,
-  updateData: Partial<Pick<SharingLink, 'ownerName' | 'isActive' | 'usageCount' | 'lastUsedAt'>>
+  updateData: Partial<Pick<SharingLink, 'ownerName' | 'isActive' | 'usageCount' | 'lastUsedAt' | 'playlistId'>>
 ): Promise<DatabaseResult<void>> {
   try {
     const linkRef = doc(db, COLLECTIONS.SHARING_LINKS, linkId)
-    
+
     await updateDoc(linkRef, {
       ...updateData,
       updatedAt: serverTimestamp(),
     })
-    
+
     return {
       success: true,
     }
@@ -225,23 +220,23 @@ export async function incrementSharingLinkUsage(linkId: string): Promise<Databas
   try {
     const linkRef = doc(db, COLLECTIONS.SHARING_LINKS, linkId)
     const linkSnap = await getDoc(linkRef)
-    
+
     if (!linkSnap.exists()) {
       return {
         success: false,
         error: 'Sharing link not found',
       }
     }
-    
+
     const currentData = linkSnap.data() as SharingLink
     const now = Timestamp.now()
-    
+
     await updateDoc(linkRef, {
       usageCount: currentData.usageCount + 1,
       lastUsedAt: now,
       updatedAt: serverTimestamp(),
     })
-    
+
     return {
       success: true,
     }
@@ -272,7 +267,7 @@ export async function isLinkSlugAvailable(linkSlug: string): Promise<DatabaseRes
     const linksRef = collection(db, COLLECTIONS.SHARING_LINKS)
     const q = query(linksRef, where('linkSlug', '==', linkSlug))
     const querySnapshot = await getDocs(q)
-    
+
     return {
       success: true,
       data: querySnapshot.empty,
@@ -299,24 +294,24 @@ export async function generateUniqueLinkSlug(): Promise<DatabaseResult<string>> 
       }
       return result
     }
-    
+
     let attempts = 0
     const maxAttempts = 10
-    
+
     while (attempts < maxAttempts) {
       const slug = generateSlug()
       const availability = await isLinkSlugAvailable(slug)
-      
+
       if (availability.success && availability.data) {
         return {
           success: true,
           data: slug,
         }
       }
-      
+
       attempts++
     }
-    
+
     return {
       success: false,
       error: 'Failed to generate unique link slug after maximum attempts',

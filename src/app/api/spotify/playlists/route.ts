@@ -16,7 +16,7 @@ import { SPOTIFY_CONFIG, APP_CONFIG } from '@/lib/constants'
 import type { Playlist as StorePlaylist, Song } from '@/stores/playlist-store'
 import { getOrCreatePlaylist, updatePlaylist } from '@/services/firebase/playlists'
 import smasCoverBase64 from '@/public/smas-cover-base64'
-import { createSharingLink, generateUniqueLinkSlug } from '@/services/firebase/sharing-links'
+import { createSharingLink, generateUniqueLinkSlug, getSharingLinkByOwner, updateSharingLink } from '@/services/firebase/sharing-links'
 
 /**
  * @description Creates or retrieves the user's SMAS playlist and syncs with Firestore.
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const { accessToken, session } = authData
-    const userId = session.user.id
+    const spotifyUserId = session.user.id
 
     // 1. Check if user already has a SMAS playlist on Spotify
     const userPlaylists = await getUserPlaylists(accessToken)
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     if (!smasPlaylist) {
       smasPlaylist = await createSpotifyPlaylist(
         accessToken,
-        userId,
+        spotifyUserId,
         SPOTIFY_CONFIG.playlistName,
         SPOTIFY_CONFIG.playlistDescription,
         true
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     // 4. Upsert playlist metadata in Firestore
     const firestoreResult = await getOrCreatePlaylist({
       spotifyPlaylistId: smasPlaylist.id,
-      spotifyUserId: userId,
+      spotifyUserId: spotifyUserId,
       name: smasPlaylist.name,
       description: smasPlaylist.description,
     })
@@ -90,18 +90,31 @@ export async function POST(request: NextRequest) {
     // 6. Generate or fetch sharing link for this playlist
     let shareLink = ''
     if (firestoreResult.success && firestoreResult.data) {
-      // Try to find an existing sharing link
-      // (You could also fetch by playlistId, but for simplicity, always create if not found)
-      const slugResult = await generateUniqueLinkSlug()
-      if (slugResult.success && typeof slugResult.data === 'string') {
-        const linkResult = await createSharingLink({
-          playlistId: firestoreResult.data.id,
-          spotifyUserId: session.user.id,
-          ownerName: session.user.name || 'User',
-          linkSlug: slugResult.data,
-        })
-        if (linkResult.success && linkResult.data) {
-          shareLink = `${APP_CONFIG.url}/share/${linkResult.data.linkSlug}`
+      // Check if user already has an existing sharing link
+      const existingLinkResult = await getSharingLinkByOwner(spotifyUserId)
+      
+      if (existingLinkResult.success && existingLinkResult.data) {
+        // User already has a sharing link, update it to point to the new playlist if needed
+        if (existingLinkResult.data.playlistId !== firestoreResult.data.id) {
+          await updateSharingLink(existingLinkResult.data.id, {
+            playlistId: firestoreResult.data.id,
+            ownerName: session.user.name || 'User',
+          })
+        }
+        shareLink = `${APP_CONFIG.url}/share/${existingLinkResult.data.linkSlug}`
+      } else {
+        // User doesn't have a sharing link, create a new one
+        const slugResult = await generateUniqueLinkSlug()
+        if (slugResult.success && typeof slugResult.data === 'string') {
+          const linkResult = await createSharingLink({
+            playlistId: firestoreResult.data.id,
+            spotifyUserId: spotifyUserId,
+            ownerName: session.user.name || 'User',
+            linkSlug: slugResult.data,
+          })
+          if (linkResult.success && linkResult.data) {
+            shareLink = `${APP_CONFIG.url}/share/${linkResult.data.linkSlug}`
+          }
         }
       }
     }

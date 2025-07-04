@@ -11,7 +11,7 @@ export interface Song {
   artist: string
   album: string
   imageUrl?: string
-  contributorId?: string
+  contributorName?: string
 }
 
 export interface Playlist {

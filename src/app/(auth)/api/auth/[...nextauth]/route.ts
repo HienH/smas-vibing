@@ -55,6 +55,30 @@ async function refreshAccessToken(refreshToken: string) {
 }
 
 /**
+ * @description Fetches Spotify user profile from the Spotify API.
+ * @param {string} accessToken - Spotify access token.
+ * @returns {Promise<any>} Spotify user profile or error.
+ */
+async function getSpotifyUserProfile(accessToken: string) {
+  try {
+    const response = await fetch('https://api.spotify.com/v1/me', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Spotify API error: ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('❌ Failed to fetch Spotify user profile:', error)
+    throw error
+  }
+}
+
+/**
  * @description NextAuth configuration for Spotify OAuth with Firebase Admin SDK adapter.
  */
 export const authOptions: NextAuthOptions = {
@@ -76,8 +100,11 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
    
-      if (account?.provider === 'spotify' && user) {
+      if (account?.provider === 'spotify' && user && account.providerAccountId && account.access_token) {
         try {
+          // Get Spotify user profile to get the spotifyUserId
+          const spotifyUserProfile = await getSpotifyUserProfile(account.access_token)
+          
           // Store user data in Firestore
           const expiresAt = account.expires_at 
             ? Timestamp.fromMillis(account.expires_at * 1000)
@@ -85,13 +112,14 @@ export const authOptions: NextAuthOptions = {
 
           await upsertUser({
             id: user.id,
+            spotifyProviderAccountId: account.providerAccountId, // From NextAuth
+            spotifyUserId: spotifyUserProfile.id, // From Spotify API
             displayName: user.name ?? '',
             email: user.email ?? '',
             imageUrl: user.image ?? undefined,
             spotifyAccessToken: account.access_token,
             spotifyRefreshToken: account.refresh_token,
             spotifyTokenExpiresAt: expiresAt,
-            spotifyUserId: account.providerAccountId,
           })
    
         } catch (error) {

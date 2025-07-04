@@ -10,18 +10,17 @@ import { Timestamp } from 'firebase/firestore'
  * @description User profile data stored in Firestore.
  */
 export interface UserProfile {
-  id: string // Spotify ID from OAuth (document ID)
-  spotifyUserId?: string // Spotify user ID of playlist owner (from playlist creation)
+  id: string // Internal UUID (Firestore document ID)
+  spotifyProviderAccountId: string // From NextAuth account.providerAccountId (OAuth link)
+  spotifyUserId: string // From Spotify API /me endpoint (API calls)
   displayName: string
   email: string
   imageUrl?: string
-  createdAt: Timestamp
-  updatedAt: Timestamp
   spotifyAccessToken?: string
   spotifyRefreshToken?: string
   spotifyTokenExpiresAt?: Timestamp
-  playlistId?: string // Firestore playlist ID owned by user
-  sharingLinkId?: string // Firestore sharing link ID owned by user
+  createdAt: Timestamp
+  updatedAt: Timestamp
 }
 
 /**
@@ -128,15 +127,15 @@ export interface DatabaseResult<T> {
  * @description User creation data.
  */
 export interface CreateUserData {
-  id: string
-  spotifyUserId?: string // Spotify user ID of playlist owner (from playlist creation)
+  id: string // Internal UUID
+  spotifyProviderAccountId: string
+  spotifyUserId: string
   displayName: string
   email: string
   imageUrl?: string
   spotifyAccessToken?: string
   spotifyRefreshToken?: string
   spotifyTokenExpiresAt?: Timestamp
-  playlistId?: string // Firestore playlist ID owned by user
 }
 
 /**
