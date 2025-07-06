@@ -14,21 +14,20 @@ import { LoginButton } from '../components/auth/login-button'
  */
 export default async function HomePage() {
   const session = await validateSession()
-  
+
   if (session) {
     redirect('/dashboard')
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-green-50 to-white px-4">
-      <div className="max-w-md w-full text-center">
-        <h1 className="text-4xl font-bold mb-4 text-green-700">{APP_CONFIG.name}</h1>
+    <div className=" flex text-center justify-center mt-12 bg-green-50">
+      <div className="max-w-lg w-full text-center">
         <p className="text-lg text-gray-700 mb-8">
           {APP_CONFIG.description}<br />
           Build your Spotify playlist together.
         </p>
         <LoginButton />
       </div>
-    </main>
+    </div>
   )
 }

@@ -29,7 +29,7 @@ interface PlaylistState {
   playlist: Playlist | null
   isLoading: boolean
   hasError: boolean
-  
+
   // Actions
   setTopSongs: (songs: Song[]) => void
   setPlaylist: (playlist: Playlist) => void
@@ -51,35 +51,35 @@ export const usePlaylistStore = create<PlaylistState>((set, get) => ({
 
   // Actions
   setTopSongs: (songs) => set({ topSongs: songs }),
-  
+
   setPlaylist: (playlist) => set({ playlist }),
-  
+
   addSongsToPlaylist: (songs, contributorId) => {
     const { playlist } = get()
     if (!playlist) return
 
     const existingSongs = new Set(playlist.songs.map(song => song.id))
     const newSongs = songs.filter(song => !existingSongs.has(song.id))
-    
+
     const updatedPlaylist = {
       ...playlist,
       songs: [...playlist.songs, ...newSongs.map(song => ({ ...song, contributorId }))],
-      contributors: playlist.contributors.includes(contributorId) 
-        ? playlist.contributors 
+      contributors: playlist.contributors.includes(contributorId)
+        ? playlist.contributors
         : [...playlist.contributors, contributorId]
     }
-    
+
     set({ playlist: updatedPlaylist })
   },
-  
+
   setLoading: (loading) => set({ isLoading: loading }),
-  
+
   setError: (error) => set({ hasError: error }),
-  
-  reset: () => set({ 
-    topSongs: [], 
-    playlist: null, 
-    isLoading: false, 
-    hasError: false 
+
+  reset: () => set({
+    topSongs: [],
+    playlist: null,
+    isLoading: false,
+    hasError: false
   })
 })) 

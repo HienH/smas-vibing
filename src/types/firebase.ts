@@ -156,7 +156,7 @@ export interface CreateContributionData {
   playlistId: string
   contributorId: string
   contributorName: string
-  contributorEmail: string
+  contributorEmail?: string
   tracks: ContributionTrack[]
 }
 

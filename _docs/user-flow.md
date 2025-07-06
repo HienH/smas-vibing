@@ -16,7 +16,7 @@
 1. **Landing Page**
    - User discovers SMAS through friend's link or direct visit
    - Sees app description: "Discover new music from your friends favourite song"
-   - CTA: "Get Started with Spotify"
+   - CTA: "Sign in with Spotify"
 
 2. **Spotify OAuth Authentication**
    - Redirect to Spotify login

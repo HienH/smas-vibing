@@ -19,7 +19,7 @@ export const LoginButton = () => {
   const handleClick = async () => {
     setIsLoading(true)
     setHasError(false)
-    
+
     try {
       await signIn('spotify', { callbackUrl: '/dashboard' })
     } catch (error) {
@@ -46,12 +46,12 @@ export const LoginButton = () => {
         aria-describedby={hasError ? "login-error" : undefined}
         className="w-full mt-6"
       >
-        {isLoading ? 'Signing in…' : 'Get Started with Spotify'}
+        {isLoading ? 'Signing in…' : 'Sign in with Spotify'}
       </Button>
-      
+
       {hasError && (
-        <p 
-          id="login-error" 
+        <p
+          id="login-error"
           className="mt-2 text-sm text-red-600 text-center"
           role="alert"
         >

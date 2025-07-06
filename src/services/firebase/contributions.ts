@@ -4,22 +4,22 @@
  * Handles contribution creation, validation, and retrieval operations.
  */
 
-import { 
-  doc, 
-  setDoc, 
-  getDoc, 
+import {
+  doc,
+  setDoc,
+  getDoc,
   collection,
   query,
   where,
   getDocs,
-  Timestamp 
+  Timestamp
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { 
-  Contribution, 
-  CreateContributionData, 
-  DatabaseResult, 
-  COLLECTIONS 
+import {
+  Contribution,
+  CreateContributionData,
+  DatabaseResult,
+  COLLECTIONS
 } from '@/types/firebase'
 
 /**
@@ -32,25 +32,26 @@ export async function createContribution(contributionData: CreateContributionDat
     const now = Timestamp.now()
     const expiresAt = Timestamp.fromMillis(now.toMillis() + 4 * 7 * 24 * 60 * 60 * 1000) // 4 weeks
     const contributionRef = doc(collection(db, COLLECTIONS.CONTRIBUTIONS))
-    
+
     const contribution: Contribution = {
       id: contributionRef.id,
       playlistId: contributionData.playlistId,
       contributorId: contributionData.contributorId,
       contributorName: contributionData.contributorName,
-      contributorEmail: contributionData.contributorEmail,
+      contributorEmail: contributionData.contributorEmail || '',
       tracks: contributionData.tracks,
       createdAt: now,
       expiresAt,
     }
 
     await setDoc(contributionRef, contribution)
-    
+
     return {
       success: true,
       data: contribution,
     }
   } catch (error) {
+    console.error('❌ Error creating contribution:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create contribution',
@@ -67,14 +68,14 @@ export async function getContributionById(contributionId: string): Promise<Datab
   try {
     const contributionRef = doc(db, COLLECTIONS.CONTRIBUTIONS, contributionId)
     const contributionSnap = await getDoc(contributionRef)
-    
+
     if (!contributionSnap.exists()) {
       return {
         success: false,
         error: 'Contribution not found',
       }
     }
-    
+
     return {
       success: true,
       data: contributionSnap.data() as Contribution,
@@ -97,12 +98,12 @@ export async function getContributionsByPlaylist(playlistId: string): Promise<Da
     const contributionsRef = collection(db, COLLECTIONS.CONTRIBUTIONS)
     const q = query(contributionsRef, where('playlistId', '==', playlistId))
     const querySnapshot = await getDocs(q)
-    
+
     const contributions: Contribution[] = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
     })) as Contribution[]
-    
+
     return {
       success: true,
       data: contributions,
@@ -125,12 +126,12 @@ export async function getContributionsByUser(contributorId: string): Promise<Dat
     const contributionsRef = collection(db, COLLECTIONS.CONTRIBUTIONS)
     const q = query(contributionsRef, where('contributorId', '==', contributorId))
     const querySnapshot = await getDocs(q)
-    
+
     const contributions: Contribution[] = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
     })) as Contribution[]
-    
+
     return {
       success: true,
       data: contributions,
@@ -152,34 +153,34 @@ export async function getContributionsByUser(contributorId: string): Promise<Dat
 export async function checkUserContribution(
   playlistId: string,
   contributorId: string
-): Promise<DatabaseResult<{hasContributed: boolean, contribution?: Contribution}>> {
+): Promise<DatabaseResult<{ hasContributed: boolean, contribution?: Contribution }>> {
   try {
     const contributionsRef = collection(db, COLLECTIONS.CONTRIBUTIONS)
     const q = query(
-      contributionsRef, 
+      contributionsRef,
       where('playlistId', '==', playlistId),
       where('contributorId', '==', contributorId)
     )
     const querySnapshot = await getDocs(q)
-    
+
     if (querySnapshot.empty) {
       return {
         success: true,
         data: { hasContributed: false },
       }
     }
-    
+
     const contribution = {
       id: querySnapshot.docs[0].id,
       ...querySnapshot.docs[0].data(),
     } as Contribution
-    
+
     const now = Timestamp.now()
     const isExpired = contribution.expiresAt.toMillis() < now.toMillis()
-    
+
     return {
       success: true,
-      data: { 
+      data: {
         hasContributed: !isExpired,
         contribution: isExpired ? undefined : contribution,
       },
@@ -200,16 +201,16 @@ export async function checkUserContribution(
 export async function getActiveContributions(playlistId: string): Promise<DatabaseResult<Contribution[]>> {
   try {
     const contributions = await getContributionsByPlaylist(playlistId)
-    
+
     if (!contributions.success || !contributions.data) {
       return contributions
     }
-    
+
     const now = Timestamp.now()
     const activeContributions = contributions.data.filter(
       contribution => contribution.expiresAt.toMillis() > now.toMillis()
     )
-    
+
     return {
       success: true,
       data: activeContributions,
@@ -227,19 +228,19 @@ export async function getActiveContributions(playlistId: string): Promise<Databa
  * @param {string} playlistId - Firestore playlist ID.
  * @returns {Promise<DatabaseResult<Array<{track: any, contributor: string}>>>} All tracks with contributor info or error.
  */
-export async function getAllContributedTracks(playlistId: string): Promise<DatabaseResult<Array<{track: any, contributor: string}>>> {
+export async function getAllContributedTracks(playlistId: string): Promise<DatabaseResult<Array<{ track: any, contributor: string }>>> {
   try {
     const contributions = await getActiveContributions(playlistId)
-    
+
     if (!contributions.success || !contributions.data) {
       return {
         success: false,
         error: contributions.error || 'Failed to get contributions',
       }
     }
-    
-    const allTracks: Array<{track: any, contributor: string}> = []
-    
+
+    const allTracks: Array<{ track: any, contributor: string }> = []
+
     contributions.data.forEach(contribution => {
       contribution.tracks.forEach(track => {
         allTracks.push({
@@ -248,7 +249,7 @@ export async function getAllContributedTracks(playlistId: string): Promise<Datab
         })
       })
     })
-    
+
     return {
       success: true,
       data: allTracks,

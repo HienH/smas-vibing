@@ -15,11 +15,11 @@ import { authOptions } from '@/app/(auth)/api/auth/[...nextauth]/route'
  */
 export async function validateSession() {
   const session = await getServerSession(authOptions)
-  
-  if (!session?.user?.email) {
+
+  if (!session?.user?.id) {
     return null
   }
-  
+
   return session
 }
 
@@ -29,11 +29,11 @@ export async function validateSession() {
  * @returns {Promise<string | null>} The access token or null.
  */
 export async function getAccessToken(request: NextRequest): Promise<string | null> {
-  const token = await getToken({ 
+  const token = await getToken({
     req: request as any,
-    secret: process.env.NEXTAUTH_SECRET 
+    secret: process.env.NEXTAUTH_SECRET
   })
-  
+
   return token?.accessToken as string || null
 }
 
@@ -44,16 +44,16 @@ export async function getAccessToken(request: NextRequest): Promise<string | nul
  */
 export async function validateApiRequest(request: NextRequest) {
   const session = await validateSession()
-  
+
   if (!session) {
     return null
   }
-  
+
   const accessToken = await getAccessToken(request)
-  
+
   if (!accessToken) {
     return null
   }
-  
+
   return { session, accessToken }
 } 

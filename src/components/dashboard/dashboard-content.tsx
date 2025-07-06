@@ -12,6 +12,7 @@ import { TopSongsCard } from '@/components/playlist/top-songs-card'
 import { ShareLinkCard } from '@/components/sharing/share-link-card'
 import { DashboardMetrics } from '@/components/dashboard/dashboard-metrics'
 import { ActivityTimeline } from '@/components/dashboard/activity-timeline'
+import { UserMenu } from '@/components/auth/user-menu'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
 
 /**
@@ -49,15 +50,17 @@ export function DashboardContent() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-green-700 mb-2">
-          Welcome back, {session?.user?.name}!
-        </h1>
-        <p className="text-gray-600">
-          Your SMAS playlist is ready. Share you're playlist link with friends
-        </p>
+      <header className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-green-700 mb-2">
+            Welcome back, {session?.user?.name}!
+          </h1>
+          <p className="text-gray-600">
+            Your SMAS playlist is ready. Share you're playlist link with friends
+          </p>
+        </div>
+        <UserMenu />
       </header>
-
 
       {/* Dashboard Metrics */}
       <DashboardMetrics
@@ -65,6 +68,7 @@ export function DashboardContent() {
         totalTracks={totalTracks}
         shareLinkUsage={shareLinkUsage}
       />
+
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">

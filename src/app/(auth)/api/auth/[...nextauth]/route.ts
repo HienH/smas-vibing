@@ -99,14 +99,14 @@ export const authOptions: NextAuthOptions = {
   debug: true,
   callbacks: {
     async signIn({ user, account }) {
-   
+
       if (account?.provider === 'spotify' && user && account.providerAccountId && account.access_token) {
         try {
           // Get Spotify user profile to get the spotifyUserId
           const spotifyUserProfile = await getSpotifyUserProfile(account.access_token)
-          
+
           // Store user data in Firestore
-          const expiresAt = account.expires_at 
+          const expiresAt = account.expires_at
             ? Timestamp.fromMillis(account.expires_at * 1000)
             : undefined
 
@@ -121,7 +121,7 @@ export const authOptions: NextAuthOptions = {
             spotifyRefreshToken: account.refresh_token,
             spotifyTokenExpiresAt: expiresAt,
           })
-   
+
         } catch (error) {
           console.error('❌ Failed to store user data:', error)
           // Don't block sign in if Firestore fails
@@ -133,15 +133,12 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, account, user }) {
 
       if (account && user) {
-
         return {
           accessToken: account.access_token,
           refreshToken: account.refresh_token,
           accessTokenExpires: account.expires_at! * 1000,
           user: {
             name: user.name,
-            email: user.email,
-            image: user.image,
           },
           sub: account.providerAccountId,
         }
@@ -169,17 +166,10 @@ export const authOptions: NextAuthOptions = {
     },
 
     async session({ session, token }) {
-
-      const user = token.user as User | undefined
-
+      const user = token.user as { name?: string } | undefined
       session.user.id = token.sub as string
       session.user.name = user?.name ?? null
-      session.user.email = user?.email ?? null
-      session.user.image = user?.image ?? null
-      session.accessToken = token.accessToken as string
-      ;(session as any).error = token.error
-
-
+        ; (session as any).error = token.error
       return session
     },
   },
