@@ -9,6 +9,7 @@ import { authOptions } from '@/app/(auth)/api/auth/[...nextauth]/route'
 import { createSharingLink, generateUniqueLinkSlug, getSharingLinkByOwner } from '@/services/firebase/sharing-links'
 import { getPlaylistById } from '@/services/firebase/playlists'
 import type { CreateSharingLinkData } from '@/types/firebase'
+import { getUserById } from '@/services/firebase/users'
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +25,14 @@ export async function POST(request: NextRequest) {
     }
     // Use session user name as fallback if ownerName is not provided
     const resolvedOwnerName = ownerName || session.user.name || 'User'
-    const spotifyUserId = session.user.id
+    const internalUserId = session.user.id
+
+    // Get user profile to get spotifyUserId
+    const userResult = await getUserById(internalUserId)
+    if (!userResult.success || !userResult.data) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+    const spotifyUserId = userResult.data.spotifyUserId
 
     // Validate playlist exists and belongs to user
     const playlistResult = await getPlaylistById(playlistId)
@@ -34,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user already has an existing sharing link
     const existingLinkResult = await getSharingLinkByOwner(spotifyUserId)
-    
+
     if (existingLinkResult.success && existingLinkResult.data) {
       // User already has a sharing link, return the existing one
       return NextResponse.json({ link: `/share/${existingLinkResult.data.linkSlug}` })

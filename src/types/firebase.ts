@@ -10,9 +10,9 @@ import { Timestamp } from 'firebase/firestore'
  * @description User profile data stored in Firestore.
  */
 export interface UserProfile {
-  id: string // Internal UUID (Firestore document ID)
-  spotifyProviderAccountId: string // From NextAuth account.providerAccountId (OAuth link)
-  spotifyUserId: string // From Spotify API /me endpoint (API calls)
+  id: string
+  spotifyProviderAccountId: string
+  spotifyUserId: string
   displayName: string
   email: string
   imageUrl?: string
@@ -45,9 +45,8 @@ export interface Playlist {
 export interface Contribution {
   id: string // Firestore document ID
   playlistId: string // Firestore playlist ID
-  contributorId: string // Spotify user ID
+  contributorId: string // Internal UUID (not Spotify ID)
   contributorName: string
-  contributorEmail: string
   tracks: ContributionTrack[]
   createdAt: Timestamp
   expiresAt: Timestamp // 4 weeks from creation
@@ -127,9 +126,9 @@ export interface DatabaseResult<T> {
  * @description User creation data.
  */
 export interface CreateUserData {
-  id: string // Internal UUID
+  id: string // Internal UUID - used in session
   spotifyProviderAccountId: string
-  spotifyUserId: string
+  spotifyUserId: string // Spotify ID - kept private
   displayName: string
   email: string
   imageUrl?: string
@@ -154,9 +153,8 @@ export interface CreatePlaylistData {
  */
 export interface CreateContributionData {
   playlistId: string
-  contributorId: string
+  contributorId: string // Internal UUID (not Spotify ID)
   contributorName: string
-  contributorEmail?: string
   tracks: ContributionTrack[]
 }
 

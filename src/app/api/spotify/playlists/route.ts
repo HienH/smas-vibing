@@ -4,12 +4,12 @@
  * Handles playlist creation in Spotify and Firestore, and generates sharing links for the SMAS app.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { 
-  getUserPlaylists, 
-  createPlaylist as createSpotifyPlaylist, 
+import {
+  getUserPlaylists,
+  createPlaylist as createSpotifyPlaylist,
   getPlaylistTracks,
   uploadPlaylistCoverImage,
-  SpotifyAPIError 
+  SpotifyAPIError
 } from '@/lib/spotify'
 import { validateApiRequest } from '@/lib/auth'
 import { SPOTIFY_CONFIG, APP_CONFIG } from '@/lib/constants'
@@ -17,6 +17,7 @@ import type { Playlist as StorePlaylist, Song } from '@/stores/playlist-store'
 import { getOrCreatePlaylist, updatePlaylist } from '@/services/firebase/playlists'
 import smasCoverBase64 from '@/public/smas-cover-base64'
 import { createSharingLink, generateUniqueLinkSlug, getSharingLinkByOwner, updateSharingLink } from '@/services/firebase/sharing-links'
+import { getUserById } from '@/services/firebase/users'
 
 /**
  * @description Creates or retrieves the user's SMAS playlist and syncs with Firestore.
@@ -30,11 +31,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const { accessToken, session } = authData
-    const spotifyUserId = session.user.id
+    const internalUserId = session.user.id
+
+    // Get user profile to get spotifyUserId
+    const userResult = await getUserById(internalUserId)
+    if (!userResult.success || !userResult.data) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+    const spotifyUserId = userResult.data.spotifyUserId
 
     // 1. Check if user already has a SMAS playlist on Spotify
     const userPlaylists = await getUserPlaylists(accessToken)
-    let smasPlaylist = userPlaylists.items.find((playlist: any) => 
+    let smasPlaylist = userPlaylists.items.find((playlist: any) =>
       playlist.name === SPOTIFY_CONFIG.playlistName
     )
 
@@ -59,7 +67,7 @@ export async function POST(request: NextRequest) {
     // 3. If newly created, upload the static SMAS cover image
     if (isNewlyCreated) {
       try {
-  
+
         await uploadPlaylistCoverImage(accessToken, smasPlaylist.id, smasCoverBase64)
       } catch (err) {
         console.error('Failed to upload SMAS cover image:', err)
@@ -92,7 +100,7 @@ export async function POST(request: NextRequest) {
     if (firestoreResult.success && firestoreResult.data) {
       // Check if user already has an existing sharing link
       const existingLinkResult = await getSharingLinkByOwner(spotifyUserId)
-      
+
       if (existingLinkResult.success && existingLinkResult.data) {
         // User already has a sharing link, update it to point to the new playlist if needed
         if (existingLinkResult.data.playlistId !== firestoreResult.data.id) {
@@ -141,7 +149,7 @@ export async function POST(request: NextRequest) {
     console.error('Error creating playlist:', error)
     if (error instanceof SpotifyAPIError && error.code === 'TOKEN_EXPIRED') {
       return NextResponse.json(
-        { error: 'Token expired, please refresh the page' }, 
+        { error: 'Token expired, please refresh the page' },
         { status: 401 }
       )
     }

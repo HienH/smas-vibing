@@ -38,7 +38,6 @@ export async function createContribution(contributionData: CreateContributionDat
       playlistId: contributionData.playlistId,
       contributorId: contributionData.contributorId,
       contributorName: contributionData.contributorName,
-      contributorEmail: contributionData.contributorEmail || '',
       tracks: contributionData.tracks,
       createdAt: now,
       expiresAt,

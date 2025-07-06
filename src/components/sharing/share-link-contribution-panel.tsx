@@ -134,11 +134,10 @@ export function ShareLinkContributionPanel({
         throw new Error(errData.error || 'Failed to add tracks to playlist')
       }
       // 8. Record contribution in Firestore
-      await addContribution({
+      const contributionResult = await addContribution({
         playlistId,
         contributorId: session.user.id,
         contributorName: session.user.name || '',
-        contributorEmail: session.user.email || '',
         tracks: newTracks.map(song => ({
           spotifyTrackId: song.id,
           name: song.name,
@@ -147,6 +146,10 @@ export function ShareLinkContributionPanel({
           imageUrl: song.imageUrl,
         })),
       })
+
+      if (!contributionResult.success) {
+        throw new Error('Failed to record contribution in database')
+      }
       setState(s => ({ ...s, isContributing: false, isSuccess: true, successTracks: newTracks }))
     } catch (err: any) {
       setState(s => ({ ...s, isContributing: false, error: err.message || 'Something went wrong' }))
@@ -280,7 +283,9 @@ export function ShareLinkContributionPanel({
             </div>
             {/* <Button onClick={() => window.location.assign('/')} aria-label="Go to home" className="mb-2 w-full">Go to Home</Button> */}
             <div className="text-center text-sm text-gray-500 mt-2">
-              Want their favorite tracks back in your own playlist? <br /> <span className="font-medium">Create your own SMAS playlist!</span>
+              Want their favorite tracks back in your own playlist? <br />
+              <Button onClick={() => window.location.assign('/')} aria-label="Create your own SMAS playlist!" className="mb-2 mt-2 w-3/5">Create your own SMAS playlist!</Button>
+
             </div>
           </CardContent>
         </Card>

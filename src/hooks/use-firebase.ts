@@ -85,8 +85,12 @@ export const useFirebase = () => {
     return await getPlaylistById(playlistId)
   }, [])
 
-  const getUserPlaylists = useCallback(async (spotifyUserId: string): Promise<DatabaseResult<Playlist[]>> => {
-    return await getPlaylistsByOwner(spotifyUserId)
+  const getUserPlaylists = useCallback(async (userId: string): Promise<DatabaseResult<Playlist[]>> => {
+    const userResult = await getUserById(userId)
+    if (!userResult.success || !userResult.data) {
+      return { success: false, error: 'User not found' }
+    }
+    return await getPlaylistsByOwner(userResult.data.spotifyUserId)
   }, [])
 
   const updatePlaylistTracks = useCallback(async (playlistId: string, trackCount: number): Promise<DatabaseResult<void>> => {
@@ -115,8 +119,13 @@ export const useFirebase = () => {
     return await getSharingLinkBySlug(linkSlug)
   }, [])
 
-  const getUserSharingLink = useCallback(async (spotifyUserId: string): Promise<DatabaseResult<SharingLink>> => {
-    return await getSharingLinkByOwner(spotifyUserId)
+  const getUserSharingLink = useCallback(async (userId: string): Promise<DatabaseResult<SharingLink>> => {
+
+    const userResult = await getUserById(userId)
+    if (!userResult.success || !userResult.data) {
+      return { success: false, error: 'User not found' }
+    }
+    return await getSharingLinkByOwner(userResult.data.spotifyUserId)
   }, [])
 
   const trackLinkUsage = useCallback(async (linkId: string): Promise<DatabaseResult<void>> => {

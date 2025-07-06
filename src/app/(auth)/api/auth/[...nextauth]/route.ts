@@ -112,8 +112,8 @@ export const authOptions: NextAuthOptions = {
 
           await upsertUser({
             id: user.id,
-            spotifyProviderAccountId: account.providerAccountId, // From NextAuth
-            spotifyUserId: spotifyUserProfile.id, // From Spotify API
+            spotifyProviderAccountId: account.providerAccountId,
+            spotifyUserId: spotifyUserProfile.id,
             displayName: user.name ?? '',
             email: user.email ?? '',
             imageUrl: user.image ?? undefined,
@@ -138,6 +138,7 @@ export const authOptions: NextAuthOptions = {
           refreshToken: account.refresh_token,
           accessTokenExpires: account.expires_at! * 1000,
           user: {
+            id: user.id,
             name: user.name,
           },
           sub: account.providerAccountId,
@@ -166,8 +167,8 @@ export const authOptions: NextAuthOptions = {
     },
 
     async session({ session, token }) {
-      const user = token.user as { name?: string } | undefined
-      session.user.id = token.sub as string
+      const user = token.user as { name?: string, id?: string } | undefined
+      session.user.id = user?.id as string
       session.user.name = user?.name ?? null
         ; (session as any).error = token.error
       return session
