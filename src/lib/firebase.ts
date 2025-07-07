@@ -6,7 +6,6 @@
 
 import { initializeApp, getApps, getApp } from 'firebase/app'
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore'
-import { getAuth, connectAuthEmulator } from 'firebase/auth'
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -25,11 +24,6 @@ const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)
  * @description Firestore database instance.
  */
 export const db = getFirestore(app)
-
-/**
- * @description Firebase Auth instance.
- */
-export const auth = getAuth(app)
 
 /**
  * @description Connect to Firebase emulators in development.
