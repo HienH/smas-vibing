@@ -6,17 +6,17 @@
 'use client'
 
 import { useState } from 'react'
-import { usePlaylistStore } from '@/stores/playlist-store'
-import { Card, CardHeader, CardContent, Button, LoadingSpinner } from '@/components/ui'
+import { Card, CardHeader, CardContent, Button, LoadingState, useToast } from '@/components/ui'
+import { useSMASPlaylist } from '@/hooks/use-spotify-queries'
 
 /**
  * @description Renders the sharing link card with copy functionality.
  * @returns {JSX.Element} The share link card component.
  */
 export function ShareLinkCard() {
-  const { playlist } = usePlaylistStore()
+  const { data: playlist, isLoading } = useSMASPlaylist()
+  const { addToast } = useToast()
   const [hasCopied, setHasCopied] = useState(false)
-  const [copyError, setCopyError] = useState(false)
 
   const handleCopy = async () => {
     if (!playlist?.shareLink) return
@@ -24,23 +24,30 @@ export function ShareLinkCard() {
     try {
       await navigator.clipboard.writeText(playlist.shareLink)
       setHasCopied(true)
-      setCopyError(false)
+      addToast({
+        type: 'success',
+        title: 'Link Copied!',
+        message: 'Your sharing link has been copied to clipboard.'
+      })
       setTimeout(() => setHasCopied(false), 2000)
     } catch (error) {
       console.error('Failed to copy link:', error)
-      setCopyError(true)
-      setTimeout(() => setCopyError(false), 3000)
+      addToast({
+        type: 'error',
+        title: 'Copy Failed',
+        message: 'Failed to copy link. Please try again.'
+      })
     }
   }
 
-  if (!playlist) {
+  if (isLoading || !playlist) {
     return (
       <Card>
         <CardHeader>
           <h2 className="text-xl font-semibold text-gray-800">Share Your Playlist</h2>
         </CardHeader>
         <CardContent>
-          <LoadingSpinner size="sm" text="Creating your sharing link..." />
+          <LoadingState isLoading={true} text="Creating your sharing link..." size="sm" />
         </CardContent>
       </Card>
     )
@@ -51,7 +58,7 @@ export function ShareLinkCard() {
       <CardHeader>
         <h2 className="text-xl font-semibold text-gray-800">Share Your Playlist</h2>
       </CardHeader>
-      
+
       <CardContent>
         <div className="space-y-4">
           <div>
@@ -76,11 +83,7 @@ export function ShareLinkCard() {
                 {hasCopied ? 'Copied!' : 'Copy'}
               </Button>
             </div>
-            {copyError && (
-              <p className="mt-1 text-sm text-red-600">
-                Failed to copy. Please try again.
-              </p>
-            )}
+
           </div>
 
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">

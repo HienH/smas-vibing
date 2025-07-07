@@ -4,9 +4,7 @@
  * Provides centralized Spotify API functionality with token management and error handling.
  */
 
-import { API_ENDPOINTS } from './constants'
-
-const SPOTIFY_API_BASE = API_ENDPOINTS.spotify.base
+import { spotifyRateLimiter } from './rate-limiter'
 
 export class SpotifyAPIError extends Error {
   constructor(
@@ -32,48 +30,52 @@ export async function spotifyRequest(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<any> {
+  return spotifyRateLimiter.executeWithRetry(async () => {
+    const response = await fetch(`https://api.spotify.com/v1${endpoint}`, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        ...(options.headers || {})
+      },
+    })
 
-  const response = await fetch(`https://api.spotify.com/v1${endpoint}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      ...(options.headers || {})
-    },
-  })
+    // Update rate limiter state from response headers
+    spotifyRateLimiter.updateFromHeaders(response.headers)
 
-  // Debug: Log the raw response text
-  const text = await response.text()
-
-  let data
-  try {
-    data = JSON.parse(text)
-  } catch (e) {
-    console.error('Failed to parse Spotify response as JSON:', text)
-    throw e
-  }
-
-  // Special case: image upload returns 202 and no body
-  if (endpoint.endsWith('/images')) {
-    if (response.status === 202) {
-      return // Success, no body to parse
+    // Special case: image upload returns 202 and no body
+    if (endpoint.endsWith('/images')) {
+      if (response.status === 202) {
+        return // Success, no body to parse
+      }
+      // If not 202, treat as error
+      throw new Error(`Failed to upload playlist cover image. Status: ${response.status}`)
     }
-    // If not 202, treat as error
-    throw new Error(`Failed to upload playlist cover image. Status: ${response.status}`)
-  }
 
-  // Usual error handling for other endpoints
-  if (response.status === 401) {
-    throw new SpotifyAPIError('TOKEN_EXPIRED', 401, 'TOKEN_EXPIRED')
-  }
+    // Debug: Log the raw response text
+    const text = await response.text()
 
-  if (!response.ok) {
-    throw new SpotifyAPIError(
-      data.error?.message || 'Spotify API error',
-      response.status,
-      data
-    )
-  }
-  return data
+    let data
+    try {
+      data = JSON.parse(text)
+    } catch (e) {
+      console.error('Failed to parse Spotify response as JSON:', text)
+      throw e
+    }
+
+    // Usual error handling for other endpoints
+    if (response.status === 401) {
+      throw new SpotifyAPIError('TOKEN_EXPIRED', 401, 'TOKEN_EXPIRED')
+    }
+
+    if (!response.ok) {
+      throw new SpotifyAPIError(
+        data.error?.message || 'Spotify API error',
+        response.status,
+        data
+      )
+    }
+    return data
+  })
 }
 
 /**

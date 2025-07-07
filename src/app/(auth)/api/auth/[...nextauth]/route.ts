@@ -81,6 +81,13 @@ async function getSpotifyUserProfile(accessToken: string) {
 /**
  * @description NextAuth configuration for Spotify OAuth with Firebase Admin SDK adapter.
  */
+// Get the correct URL for the current environment
+const getBaseUrl = () => {
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
+  return 'http://localhost:3000'
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     SpotifyProvider({
@@ -96,7 +103,36 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
   },
-  debug: true,
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+    callbackUrl: {
+      name: `next-auth.callback-url`,
+      options: {
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+    csrfToken: {
+      name: `next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
+  useSecureCookies: process.env.NODE_ENV === 'production',
+  debug: process.env.NODE_ENV === 'development',
   callbacks: {
     async signIn({ user, account }) {
 

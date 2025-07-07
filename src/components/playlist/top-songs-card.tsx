@@ -5,21 +5,25 @@
  */
 'use client'
 
-import { usePlaylistStore } from '@/stores/playlist-store'
-import { Card, CardHeader, CardContent, LoadingSpinner } from '@/components/ui'
+import { Card, CardHeader, CardContent, LoadingState } from '@/components/ui'
 import { SongItem } from './song-item'
+import type { Song } from '@/stores/playlist-store'
+
+interface TopSongsCardProps {
+  songs: Song[]
+  isLoading?: boolean
+}
 
 /**
  * @description Renders the user's top 5 songs card.
+ * @param {TopSongsCardProps} props - Component props.
  * @returns {JSX.Element} The top songs card component.
  */
-export function TopSongsCard() {
-  const { topSongs, isLoading } = usePlaylistStore()
-
+export function TopSongsCard({ songs, isLoading = false }: TopSongsCardProps) {
   if (isLoading) {
     return (
       <Card>
-        <LoadingSpinner size="sm" text="Loading top songs..." />
+        <LoadingState isLoading={true} text="Loading top songs..." size="sm" />
       </Card>
     )
   }
@@ -29,9 +33,9 @@ export function TopSongsCard() {
       <CardHeader>
         <h2 className="text-xl font-semibold text-gray-800">Your Top 5 Songs</h2>
       </CardHeader>
-      
+
       <CardContent>
-        {topSongs.length === 0 ? (
+        {songs.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-600 mb-2">No top songs found</p>
             <p className="text-sm text-gray-500">
@@ -40,9 +44,9 @@ export function TopSongsCard() {
           </div>
         ) : (
           <div className="space-y-3">
-            {topSongs.map((song, index) => (
-              <div key={song.id} className="flex items-center space-x-3">
-                <span 
+            {songs.map((song: Song, index: number) => (
+              <div key={song.id} className="flex items-center space-x-3 ">
+                <span
                   className="flex-shrink-0 w-6 h-6 bg-green-100 text-green-800 rounded-full flex items-center justify-center text-xs font-medium"
                   aria-label={`Rank ${index + 1}`}
                 >

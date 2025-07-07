@@ -10,6 +10,8 @@ import { SessionProvider } from "@/components/providers/session-provider";
 import { APP_CONFIG } from "@/lib/constants";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMusic } from '@fortawesome/free-solid-svg-icons';
+import { ErrorBoundary, ToastProvider } from "@/components/ui";
+import { QueryProvider } from "@/components/providers/query-provider";
 
 
 const geistSans = Geist({
@@ -50,20 +52,26 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${knewave.variable} antialiased bg-gradient-to-b from-green-50 to-white`}
       >
-        <SessionProvider>
-          <div className="w-full flex justify-center px-4 mt-10">
-            <div className="flex items-center gap-3 whitespace-nowrap  max-w-full">
-              <h1 className="font-knewave text-3xl md:text-4xl   lg:text-5xl   text-green-700 leading-tight whitespace-nowrap">
-                SEND ME A SONG
-              </h1>
-              <FontAwesomeIcon
-                icon={faMusic}
-                className=" text-green-700 w-12 h-12 animate-bounce"
-              />
-            </div>
-          </div>
-          {children}
-        </SessionProvider>
+        <ErrorBoundary>
+          <SessionProvider>
+            <QueryProvider>
+              <ToastProvider>
+                <div className="w-full flex justify-center px-4 mt-4 sm:mt-10">
+                  <div className="flex items-center gap-2 sm:gap-3 max-w-full">
+                    <h1 className="font-knewave text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-green-700 leading-tight">
+                      SEND ME A SONG
+                    </h1>
+                    <FontAwesomeIcon
+                      icon={faMusic}
+                      className="text-green-700 w-8 h-8 sm:w-12 sm:h-12 animate-bounce"
+                    />
+                  </div>
+                </div>
+                {children}
+              </ToastProvider>
+            </QueryProvider>
+          </SessionProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

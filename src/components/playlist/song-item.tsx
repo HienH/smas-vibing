@@ -23,7 +23,7 @@ export function SongItem({ song }: SongItemProps) {
   }
 
   return (
-    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg w-full">
       {song.imageUrl && !imageError ? (
         <img
           src={song.imageUrl}
@@ -33,14 +33,14 @@ export function SongItem({ song }: SongItemProps) {
           loading="lazy"
         />
       ) : (
-        <div 
+        <div
           className="w-12 h-12 rounded-md bg-gray-200 flex items-center justify-center"
           aria-label="No album cover available"
         >
           <span className="text-gray-500 text-xs">🎵</span>
         </div>
       )}
-      
+
       <div className="flex-1 min-w-0">
         <h4 className="text-sm font-medium text-gray-900 truncate">
           {song.name}
@@ -55,7 +55,7 @@ export function SongItem({ song }: SongItemProps) {
 
       {song.contributorName && (
         <div className="flex-shrink-0">
-          <span 
+          <span
             className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
             aria-label={`Contributed by ${song.contributorName}`}
           >

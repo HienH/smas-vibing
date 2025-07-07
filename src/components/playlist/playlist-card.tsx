@@ -5,13 +5,13 @@
  */
 'use client'
 
-import { usePlaylistStore } from '@/stores/playlist-store'
-import { Card, CardHeader, CardContent, LoadingSpinner } from '@/components/ui'
+import { Card, CardHeader, CardContent, LoadingState } from '@/components/ui'
 import { SongItem } from './song-item'
 import { useState, useMemo } from 'react'
 import { type Contribution } from '@/types/firebase'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { format } from 'date-fns'
+import { useSMASPlaylist } from '@/hooks/use-spotify-queries'
 
 interface PlaylistCardProps {
   contributions: Contribution[]
@@ -23,7 +23,7 @@ interface PlaylistCardProps {
  * @returns {JSX.Element} The playlist card component.
  */
 export function PlaylistCard({ contributions }: PlaylistCardProps) {
-  const { playlist, isLoading } = usePlaylistStore()
+  const { data: playlist, isLoading } = useSMASPlaylist()
 
   const allTracks = useMemo(() => {
     const contributedSongs = contributions.flatMap(contribution =>
@@ -49,7 +49,7 @@ export function PlaylistCard({ contributions }: PlaylistCardProps) {
       date: c.createdAt,
     }))
       .sort((a, b) => b.date.toMillis() - a.date.toMillis())
-    
+
     return [...contributionList]
   }, [playlist, contributions])
 
@@ -64,7 +64,7 @@ export function PlaylistCard({ contributions }: PlaylistCardProps) {
   if (isLoading) {
     return (
       <Card>
-        <LoadingSpinner size="sm" text="Loading playlist..." />
+        <LoadingState isLoading={true} text="Loading playlist..." size="sm" />
       </Card>
     )
   }
@@ -93,7 +93,7 @@ export function PlaylistCard({ contributions }: PlaylistCardProps) {
       <CardContent>
         {/* Contributor Filter Dropdown */}
         <div className="mb-4 flex items-center gap-2">
-          Filter by contributors: 
+          Filter by contributors:
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -125,12 +125,12 @@ export function PlaylistCard({ contributions }: PlaylistCardProps) {
         {filteredTracks.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-600 mb-2">
-              {selectedContributor 
-                ? "No songs found for this contributor." 
+              {selectedContributor
+                ? "No songs found for this contributor."
                 : "No songs in your playlist yet."}
             </p>
             <p className="text-sm text-gray-500">
-              {selectedContributor 
+              {selectedContributor
                 ? "This contributor hasn't added any songs yet."
                 : "Share your link with friends to start collecting their favorite songs!"}
             </p>
@@ -144,8 +144,8 @@ export function PlaylistCard({ contributions }: PlaylistCardProps) {
         )}
 
         {/* Contributors List */}
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Contributors</h3>
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Contributors</h3>
           <div className="flex flex-col gap-2">
             {contributors.length === 0 ? (
               <span className="text-xs text-gray-500">No contributors yet.</span>
