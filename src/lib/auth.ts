@@ -16,7 +16,7 @@ import { authOptions } from '@/app/(auth)/api/auth/[...nextauth]/route'
 export async function validateSession() {
   const session = await getServerSession(authOptions)
 
-  if (!session?.user?.id) {
+  if (!session?.user?.id || !session?.user?.email) {
     return null
   }
 

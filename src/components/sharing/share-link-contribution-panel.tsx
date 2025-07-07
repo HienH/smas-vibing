@@ -75,7 +75,7 @@ export function ShareLinkContributionPanel({
       setState(s => ({
         ...s,
         isValid: false,
-        error: 'Failed to load sharing link.'
+        error: 'invalid or expired sharing link'
       }))
     }
   }, [linkError])

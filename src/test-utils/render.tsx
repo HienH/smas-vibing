@@ -9,6 +9,7 @@ import { render, RenderOptions } from '@testing-library/react'
 import { SessionProvider } from 'next-auth/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { mockAuthData } from '@/mocks/next-auth'
+import { ToastProvider } from '@/components/ui/toast'
 
 interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
   session?: any
@@ -25,19 +26,21 @@ const createTestQueryClient = () => new QueryClient({
   },
 })
 
-function AllTheProviders({ 
-  children, 
-  session = mockAuthData.session 
-}: { 
+function AllTheProviders({
+  children,
+  session = mockAuthData.session
+}: {
   children: React.ReactNode
-  session?: any 
+  session?: any
 }) {
   const queryClient = createTestQueryClient()
 
   return (
     <SessionProvider session={session}>
       <QueryClientProvider client={queryClient}>
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </QueryClientProvider>
     </SessionProvider>
   )

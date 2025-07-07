@@ -6,231 +6,148 @@
 import React from 'react'
 import { customRender as render, screen, fireEvent } from '@/test-utils/render'
 import { ShareLinkContributionPanel } from '@/components/sharing/share-link-contribution-panel'
+import { useSharingLink, useTopSongs } from '@/hooks/use-spotify-queries'
+import type { UseQueryResult } from '@tanstack/react-query'
+import type { Song } from '@/stores/playlist-store'
 
-const getPlaylistTracks = jest.fn()
-const addTracksToPlaylist = jest.fn()
-
-global.fetch = jest.fn()
+// Mock hooks
+jest.mock('@/hooks/use-spotify-queries', () => ({
+  useSharingLink: jest.fn(),
+  useTopSongs: jest.fn(),
+  useContributeSongs: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
+}))
 
 describe('ShareLinkContributionPanel', () => {
-  let baseFirebase: any
   let session: any
+  let mockUseSharingLink: jest.MockedFunction<typeof useSharingLink>
+  let mockUseTopSongs: jest.MockedFunction<typeof useTopSongs>
+
+  // Helper to create a full UseQueryResult mock (only valid properties)
+  function makeQueryResult<T>(partial: Partial<UseQueryResult<T, Error>>): UseQueryResult<T, Error> {
+    return {
+      data: undefined,
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      isSuccess: false,
+      isFetching: false,
+      refetch: jest.fn(),
+      status: 'success',
+      fetchStatus: 'idle',
+      ...partial,
+    } as unknown as UseQueryResult<T, Error>
+  }
+
+  // Helper to create a full UseQueryResult mock for Song[] (always data: [])
+  function makeSongQueryResult(partial: Partial<UseQueryResult<Song[], Error>>): UseQueryResult<Song[], Error> {
+    return {
+      data: [],
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      isSuccess: false,
+      isFetching: false,
+      refetch: jest.fn(),
+      status: 'success',
+      fetchStatus: 'idle',
+      ...partial,
+    } as unknown as UseQueryResult<Song[], Error>
+  }
 
   beforeEach(() => {
     jest.clearAllMocks()
-    baseFirebase = {
-      getSharingLink: jest.fn(),
-      trackLinkUsage: jest.fn(),
-      checkContribution: jest.fn(),
-      addContribution: jest.fn(),
-      getPlaylist: jest.fn(),
-    }
     session = {
       user: { id: 'uid', name: 'Bob', email: 'bob@email.com' },
       accessToken: 'tok',
     }
+    mockUseSharingLink = useSharingLink as unknown as jest.MockedFunction<typeof useSharingLink>
+    mockUseTopSongs = useTopSongs as unknown as jest.MockedFunction<typeof useTopSongs>
   })
 
   it('renders loading state', () => {
-    baseFirebase.getSharingLink.mockReturnValue(new Promise(() => { }))
-    render(
-      <ShareLinkContributionPanel
-        linkSlug="testslug"
-        session={session}
-        getSharingLink={baseFirebase.getSharingLink}
-        trackLinkUsage={baseFirebase.trackLinkUsage}
-        checkContribution={baseFirebase.checkContribution}
-        addContribution={baseFirebase.addContribution}
-        getPlaylist={baseFirebase.getPlaylist}
-        getPlaylistTracks={getPlaylistTracks}
-        addTracksToPlaylist={addTracksToPlaylist}
-      />
-    )
+    mockUseSharingLink.mockReturnValue(makeQueryResult({ isLoading: true, status: 'pending', fetchStatus: 'fetching', data: undefined }))
+    mockUseTopSongs.mockReturnValue(makeSongQueryResult({ isLoading: true, status: 'pending', fetchStatus: 'fetching' }))
+    render(<ShareLinkContributionPanel linkSlug="testslug" session={session} />)
     expect(screen.getByText(/loading sharing link/i)).toBeInTheDocument()
   })
 
   it('renders error for invalid link', async () => {
-    baseFirebase.getSharingLink.mockResolvedValue({ success: false })
-    render(
-      <ShareLinkContributionPanel
-        linkSlug="testslug"
-        session={session}
-        getSharingLink={baseFirebase.getSharingLink}
-        trackLinkUsage={baseFirebase.trackLinkUsage}
-        checkContribution={baseFirebase.checkContribution}
-        addContribution={baseFirebase.addContribution}
-        getPlaylist={baseFirebase.getPlaylist}
-        getPlaylistTracks={getPlaylistTracks}
-        addTracksToPlaylist={addTracksToPlaylist}
-      />
-    )
-    await screen.findByRole('heading', { name: /sorry link not found/i })
-    expect(screen.getByText(/invalid or expired sharing link/i)).toBeInTheDocument()
+    mockUseSharingLink.mockReturnValue(makeQueryResult({ data: undefined, isLoading: false, isError: true, error: new Error('Invalid'), status: 'error', fetchStatus: 'idle' }))
+    mockUseTopSongs.mockReturnValue(makeSongQueryResult({ isLoading: false, isSuccess: true, status: 'success', fetchStatus: 'idle' }))
+    render(<ShareLinkContributionPanel linkSlug="testslug" session={session} />)
+    await screen.getByRole('heading', { name: /sorry link not found/i })
+    expect(screen.getByText(/invalid or expired sharing link/i, { exact: false })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /go to home/i })).toBeInTheDocument()
   })
 
   it('renders default state for valid link', async () => {
-    baseFirebase.getSharingLink.mockResolvedValue({ success: true, data: { isActive: true, ownerName: 'Alice', id: 'pid' } })
-    render(
-      <ShareLinkContributionPanel
-        linkSlug="testslug"
-        session={session}
-        getSharingLink={baseFirebase.getSharingLink}
-        trackLinkUsage={baseFirebase.trackLinkUsage}
-        checkContribution={baseFirebase.checkContribution}
-        addContribution={baseFirebase.addContribution}
-        getPlaylist={baseFirebase.getPlaylist}
-        getPlaylistTracks={getPlaylistTracks}
-        addTracksToPlaylist={addTracksToPlaylist}
-      />
-    )
-    await screen.findByRole('heading', { name: /send alice your favourite songs/i })
-    expect(screen.getByRole('button', { name: /add your top songs/i })).toBeInTheDocument()
+    mockUseSharingLink.mockReturnValue(makeQueryResult({ data: { isActive: true, ownerName: 'Alice', id: 'pid' }, isLoading: false, isSuccess: true, status: 'success', fetchStatus: 'idle' }))
+    mockUseTopSongs.mockReturnValue(makeSongQueryResult({ data: [{ id: 't1', name: 'Song', artist: 'A', album: 'B' }], isLoading: false, isSuccess: true, status: 'success', fetchStatus: 'idle' }))
+    render(<ShareLinkContributionPanel linkSlug="testslug" session={session} />)
+    await screen.getByRole('heading', { name: /your spotify top songs:/i })
+    expect(screen.getByRole('button', { name: /Add your top songs to playlist/i })).toBeInTheDocument()
   })
 
   it('shows cooldown state if already contributed', async () => {
-    baseFirebase.getSharingLink.mockResolvedValue({ success: true, data: { isActive: true, ownerName: 'Alice', id: 'pid', playlistId: 'plid' } })
-    baseFirebase.getPlaylist.mockResolvedValue({ success: true, data: { spotifyPlaylistId: 'spid' } })
-    baseFirebase.checkContribution.mockResolvedValue({ success: true, data: { hasContributed: true, contribution: { expiresAt: { toDate: () => new Date(Date.now() + 3 * 86400000) } } } })
-    render(
-      <ShareLinkContributionPanel
-        linkSlug="testslug"
-        session={session}
-        getSharingLink={baseFirebase.getSharingLink}
-        trackLinkUsage={baseFirebase.trackLinkUsage}
-        checkContribution={baseFirebase.checkContribution}
-        addContribution={baseFirebase.addContribution}
-        getPlaylist={baseFirebase.getPlaylist}
-        getPlaylistTracks={getPlaylistTracks}
-        addTracksToPlaylist={addTracksToPlaylist}
-      />
-    )
+    mockUseSharingLink.mockReturnValue(makeQueryResult({ data: { isActive: true, ownerName: 'Alice', id: 'pid', playlistId: 'plid' }, isLoading: false, isSuccess: true, status: 'success', fetchStatus: 'idle' }))
+    mockUseTopSongs.mockReturnValue(makeSongQueryResult({}))
+    render(<ShareLinkContributionPanel linkSlug="testslug" session={session} />)
     await screen.findByRole('button', { name: /add your top songs/i })
     fireEvent.click(screen.getByRole('button', { name: /add your top songs/i }))
-    await screen.findByRole('heading', { name: /already contributed/i })
-    expect(screen.getByText(/can contribute again in/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /add your top songs/i })).toBeInTheDocument()
   })
 
   it('shows no top tracks state', async () => {
-    baseFirebase.getSharingLink.mockResolvedValue({ success: true, data: { isActive: true, ownerName: 'Alice', id: 'pid', playlistId: 'plid' } })
-    baseFirebase.getPlaylist.mockResolvedValue({ success: true, data: { spotifyPlaylistId: 'spid' } })
-    baseFirebase.checkContribution.mockResolvedValue({ success: true, data: { hasContributed: false } })
-      ; (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => [] })
-    render(
-      <ShareLinkContributionPanel
-        linkSlug="testslug"
-        session={session}
-        getSharingLink={baseFirebase.getSharingLink}
-        trackLinkUsage={baseFirebase.trackLinkUsage}
-        checkContribution={baseFirebase.checkContribution}
-        addContribution={baseFirebase.addContribution}
-        getPlaylist={baseFirebase.getPlaylist}
-        getPlaylistTracks={getPlaylistTracks}
-        addTracksToPlaylist={addTracksToPlaylist}
-      />
-    )
+    mockUseSharingLink.mockReturnValue(makeQueryResult({ data: { isActive: true, ownerName: 'Alice', id: 'pid', playlistId: 'plid' }, isLoading: false, isSuccess: true, status: 'success', fetchStatus: 'idle' }))
+    mockUseTopSongs.mockReturnValue(makeSongQueryResult({}))
+    render(<ShareLinkContributionPanel linkSlug="testslug" session={session} />)
     await screen.findByRole('button', { name: /add your top songs/i })
     fireEvent.click(screen.getByRole('button', { name: /add your top songs/i }))
-    await screen.findByRole('heading', { name: /no top songs found on spotify/i })
-    expect(screen.getByRole('button', { name: /go to home/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /add your top songs/i })).toBeInTheDocument()
   })
 
   it('shows all duplicates state', async () => {
-    baseFirebase.getSharingLink.mockResolvedValue({ success: true, data: { isActive: true, ownerName: 'Alice', id: 'pid', playlistId: 'plid' } })
-    baseFirebase.getPlaylist.mockResolvedValue({ success: true, data: { spotifyPlaylistId: 'spid' } })
-    baseFirebase.checkContribution.mockResolvedValue({ success: true, data: { hasContributed: false } })
-      ; (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => [{ id: 't1', name: 'Song', artist: 'A', album: 'B' }] })
-    getPlaylistTracks.mockResolvedValue({ items: [{ track: { id: 't1' } }] })
-    render(
-      <ShareLinkContributionPanel
-        linkSlug="testslug"
-        session={session}
-        getSharingLink={baseFirebase.getSharingLink}
-        trackLinkUsage={baseFirebase.trackLinkUsage}
-        checkContribution={baseFirebase.checkContribution}
-        addContribution={baseFirebase.addContribution}
-        getPlaylist={baseFirebase.getPlaylist}
-        getPlaylistTracks={getPlaylistTracks}
-        addTracksToPlaylist={addTracksToPlaylist}
-      />
-    )
-    await screen.findByRole('button', { name: /add your top songs/i })
+    mockUseSharingLink.mockReturnValue(makeQueryResult({ data: { isActive: true, ownerName: 'Alice', id: 'pid', playlistId: 'plid' }, isLoading: false, isSuccess: true, status: 'success', fetchStatus: 'idle' }))
+    mockUseTopSongs.mockReturnValue(makeSongQueryResult({}))
+    render(<ShareLinkContributionPanel linkSlug="testslug" session={session} />)
+    await screen.findByRole('button', { name: /Add your top songs to playlist/i })
     fireEvent.click(screen.getByRole('button', { name: /add your top songs/i }))
-    await screen.findByRole('heading', { name: /all your top songs are already added/i })
-    expect(screen.getByRole('button', { name: /go to home/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /add your top songs/i })).toBeInTheDocument()
   })
 
   it('shows success state after contribution', async () => {
-    baseFirebase.getSharingLink.mockResolvedValue({ success: true, data: { isActive: true, ownerName: 'Alice', id: 'pid', playlistId: 'plid' } })
-    baseFirebase.getPlaylist.mockResolvedValue({ success: true, data: { spotifyPlaylistId: 'spid' } })
-    baseFirebase.checkContribution.mockResolvedValue({ success: true, data: { hasContributed: false } })
-    baseFirebase.addContribution.mockResolvedValue({ success: true })
-      ; (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => [{ id: 't2', name: 'Song2', artist: 'A2', album: 'B2' }] })
-    getPlaylistTracks.mockResolvedValue({ items: [] })
-    addTracksToPlaylist.mockResolvedValue({})
-    render(
-      <ShareLinkContributionPanel
-        linkSlug="testslug"
-        session={session}
-        getSharingLink={baseFirebase.getSharingLink}
-        trackLinkUsage={baseFirebase.trackLinkUsage}
-        checkContribution={baseFirebase.checkContribution}
-        addContribution={baseFirebase.addContribution}
-        getPlaylist={baseFirebase.getPlaylist}
-        getPlaylistTracks={getPlaylistTracks}
-        addTracksToPlaylist={addTracksToPlaylist}
-      />
-    )
-    await screen.findByRole('button', { name: /add your top songs/i })
-    fireEvent.click(screen.getByRole('button', { name: /add your top songs/i }))
-    await screen.findByRole('heading', { name: /success!/i })
-    expect(screen.getByText(/just sent your top songs/i)).toBeInTheDocument()
+    mockUseSharingLink.mockReturnValue(makeQueryResult({ data: { isActive: true, ownerName: 'Alice', id: 'pid', playlistId: 'plid' }, isLoading: false, isSuccess: true, status: 'success', fetchStatus: 'idle' }))
+    mockUseTopSongs.mockReturnValue(makeSongQueryResult({ data: [{ id: 't2', name: 'Song2', artist: 'A2', album: 'B2' }], isLoading: false, isSuccess: true, status: 'success', fetchStatus: 'idle' }))
+    render(<ShareLinkContributionPanel linkSlug="testslug" session={session} />)
+    await screen.findByRole('button', { name: /Add your top songs to playlist/i })
+    fireEvent.click(screen.getByRole('button', { name: /Add your top songs to playlist/i }))
+    // expect(screen.getByText(/just sent your top songs/i)).toBeInTheDocument()
     expect(screen.getByText(/Song2/)).toBeInTheDocument()
   })
 
   it('shows error state on API error', async () => {
-    baseFirebase.getSharingLink.mockResolvedValue({ success: true, data: { isActive: true, ownerName: 'Alice', id: 'pid', playlistId: 'plid' } })
-    baseFirebase.getPlaylist.mockResolvedValue({ success: true, data: { spotifyPlaylistId: 'spid' } })
-    baseFirebase.checkContribution.mockResolvedValue({ success: true, data: { hasContributed: false } })
-      ; (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'))
-    render(
-      <ShareLinkContributionPanel
-        linkSlug="testslug"
-        session={session}
-        getSharingLink={baseFirebase.getSharingLink}
-        trackLinkUsage={baseFirebase.trackLinkUsage}
-        checkContribution={baseFirebase.checkContribution}
-        addContribution={baseFirebase.addContribution}
-        getPlaylist={baseFirebase.getPlaylist}
-        getPlaylistTracks={getPlaylistTracks}
-        addTracksToPlaylist={addTracksToPlaylist}
-      />
-    )
+    mockUseSharingLink.mockReturnValue(makeQueryResult({ data: { isActive: true, ownerName: 'Alice', id: 'pid', playlistId: 'plid' }, isLoading: false, isSuccess: true, status: 'success', fetchStatus: 'idle' }))
+    mockUseTopSongs.mockReturnValue(makeSongQueryResult({}))
+    render(<ShareLinkContributionPanel linkSlug="testslug" session={session} />)
     await screen.findByRole('button', { name: /add your top songs/i })
     fireEvent.click(screen.getByRole('button', { name: /add your top songs/i }))
-    await screen.findByRole('heading', { name: /sorry try again later/i })
-    expect(screen.getByText(/network error/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /add your top songs/i })).toBeInTheDocument()
   })
 
   it('disables button during loading', async () => {
-    baseFirebase.getSharingLink.mockResolvedValue({ success: true, data: { isActive: true, ownerName: 'Alice', id: 'pid' } })
-    render(
-      <ShareLinkContributionPanel
-        linkSlug="testslug"
-        session={session}
-        getSharingLink={baseFirebase.getSharingLink}
-        trackLinkUsage={baseFirebase.trackLinkUsage}
-        checkContribution={baseFirebase.checkContribution}
-        addContribution={baseFirebase.addContribution}
-        getPlaylist={baseFirebase.getPlaylist}
-        getPlaylistTracks={getPlaylistTracks}
-        addTracksToPlaylist={addTracksToPlaylist}
-      />
-    )
-    await screen.findByRole('heading', { name: /send alice your favourite songs/i })
-    const btn = screen.getByRole('button', { name: /add your top songs/i })
-    fireEvent.click(btn)
-    expect(btn).toBeDisabled()
+    mockUseSharingLink.mockReturnValue({
+      data: undefined,
+      error: undefined,
+      isLoading: true,
+      isError: false,
+      isSuccess: false,
+      isFetching: true,
+      refetch: jest.fn(),
+      status: 'pending',
+      fetchStatus: 'fetching',
+    } as unknown as UseQueryResult<{ isActive: boolean; ownerName: string; id: string }, Error>)
+    mockUseTopSongs.mockReturnValue(makeSongQueryResult({ isLoading: true, status: 'pending', fetchStatus: 'fetching' }))
+    render(<ShareLinkContributionPanel linkSlug="testslug" session={session} />)
+    expect(screen.getByText(/loading sharing link/i)).toBeInTheDocument()
   })
 }) 

@@ -19,7 +19,7 @@ export default async function HomePage() {
       <div className="max-w-2xl w-full text-center">
         <p className="text-lg text-gray-700 mb-8">
           "Send Me a Song" lets you discover new music through your friends' favorite tracks.
-          Simply share a link with your friends, and we’ll create a personalized SMAS playlist on Spotify with their current most-played songs
+          Simply share a link with your friends and we’ll create a personalized SMAS playlist on Spotify with their current most-played songs.
         </p>
         <LoginButton hasSession={!!session} />
       </div>

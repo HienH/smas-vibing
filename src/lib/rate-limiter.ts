@@ -45,6 +45,9 @@ export class RateLimiter {
      * @param {Headers} headers - Response headers from Spotify API.
      */
     updateFromHeaders(headers: Headers): void {
+        if (!headers || typeof (headers as any).get !== 'function') {
+            return
+        }
         const remaining = headers.get('X-RateLimit-Remaining')
         const reset = headers.get('X-RateLimit-Reset')
         const limit = headers.get('X-RateLimit-Limit')
