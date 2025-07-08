@@ -16,7 +16,7 @@ import { authOptions } from '@/app/(auth)/api/auth/[...nextauth]/route'
 export async function validateSession() {
   const session = await getServerSession(authOptions)
 
-  if (!session?.user?.id || !session?.user?.email) {
+  if (!session?.user?.id) {
     return null
   }
 
@@ -24,11 +24,12 @@ export async function validateSession() {
 }
 
 /**
- * @description Extracts access token from request for API routes.
+ * @description Extracts access token from NextAuth session.
  * @param {NextRequest} request - The incoming request.
  * @returns {Promise<string | null>} The access token or null.
  */
 export async function getAccessToken(request: NextRequest): Promise<string | null> {
+
   const token = await getToken({
     req: request as any,
     secret: process.env.NEXTAUTH_SECRET

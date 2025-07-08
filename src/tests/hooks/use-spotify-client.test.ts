@@ -4,7 +4,7 @@
  * Tests hook logic with mocked API responses and session management.
  */
 
-import { renderHook, act, waitFor } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { useSpotifyClient } from '@/hooks/use-spotify-client'
 import { mockSpotifyData } from '@/mocks/spotify-api'
 import { createMockSession } from '@/test-utils/data-factories'
@@ -36,7 +36,7 @@ describe('useSpotifyClient', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    
+
     mockUsePlaylistStore.mockReturnValue({
       setTopSongs: mockSetTopSongs,
       setPlaylist: mockSetPlaylist,
@@ -59,10 +59,10 @@ describe('useSpotifyClient', () => {
         update: jest.fn()
       })
 
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockSpotifyData.topSongs)
-      })
+        ; (fetch as jest.Mock).mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockSpotifyData.topSongs)
+        })
 
       const { result } = renderHook(() => useSpotifyClient())
 
@@ -84,10 +84,10 @@ describe('useSpotifyClient', () => {
         update: jest.fn()
       })
 
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
-        status: 401,
-        ok: false
-      })
+        ; (fetch as jest.Mock).mockResolvedValueOnce({
+          status: 401,
+          ok: false
+        })
 
       const { result } = renderHook(() => useSpotifyClient())
 
@@ -107,11 +107,11 @@ describe('useSpotifyClient', () => {
       })
 
       const errorMessage = 'Failed to fetch top songs'
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: () => Promise.resolve({ error: errorMessage })
-      })
+        ; (fetch as jest.Mock).mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          json: () => Promise.resolve({ error: errorMessage })
+        })
 
       const { result } = renderHook(() => useSpotifyClient())
 
@@ -149,10 +149,10 @@ describe('useSpotifyClient', () => {
         update: jest.fn()
       })
 
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockSpotifyData.smasPlaylist)
-      })
+        ; (fetch as jest.Mock).mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockSpotifyData.smasPlaylist)
+        })
 
       const { result } = renderHook(() => useSpotifyClient())
 
@@ -177,10 +177,10 @@ describe('useSpotifyClient', () => {
         update: jest.fn()
       })
 
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
-        status: 401,
-        ok: false
-      })
+        ; (fetch as jest.Mock).mockResolvedValueOnce({
+          status: 401,
+          ok: false
+        })
 
       const { result } = renderHook(() => useSpotifyClient())
 
@@ -200,11 +200,11 @@ describe('useSpotifyClient', () => {
       })
 
       const errorMessage = 'Failed to create playlist'
-      ;(fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: () => Promise.resolve({ error: errorMessage })
-      })
+        ; (fetch as jest.Mock).mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          json: () => Promise.resolve({ error: errorMessage })
+        })
 
       const { result } = renderHook(() => useSpotifyClient())
 

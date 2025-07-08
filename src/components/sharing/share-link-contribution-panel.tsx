@@ -154,7 +154,7 @@ export function ShareLinkContributionPanel({
               addToast({
                 type: 'success',
                 title: 'Songs Added!',
-                message: `Your top songs have been added to ${state.ownerName}'s playlist.`
+                message: `Your top songs have been added to ${state.ownerName}&apos;s playlist.`
               })
             }
           },
@@ -303,7 +303,7 @@ export function ShareLinkContributionPanel({
                   Send me a song allows you to send your most played spotify song to
                   <span className='font-semibold'>
                     {" "}{state.ownerName} {" "}
-                  </span>SMAS playlist. Simply sign in with spotify and we'd do the rest.</p>
+                  </span>SMAS playlist. Simply sign in with spotify and we&apos;d do the rest.</p>
               </>
             }
 

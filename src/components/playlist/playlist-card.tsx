@@ -38,7 +38,7 @@ export function PlaylistCard({ contributions }: PlaylistCardProps) {
     )
 
     return [...contributedSongs]
-  }, [playlist, contributions])
+  }, [contributions])
 
   // Build unique contributors list
   const contributors = useMemo(() => {
@@ -51,7 +51,7 @@ export function PlaylistCard({ contributions }: PlaylistCardProps) {
       .sort((a, b) => b.date.toMillis() - a.date.toMillis())
 
     return [...contributionList]
-  }, [playlist, contributions])
+  }, [contributions])
 
   const [selectedContributor, setSelectedContributor] = useState<string | null>(null)
 

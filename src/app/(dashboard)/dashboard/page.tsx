@@ -20,7 +20,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-green-50 to-white">
-      <DashboardContent />
+      <DashboardContent session={session} />
     </main>
   )
 } 

@@ -2,11 +2,12 @@ import NextAuth from 'next-auth'
 import SpotifyProvider from 'next-auth/providers/spotify'
 import { FirestoreAdapter } from '@next-auth/firebase-adapter'
 import type { NextAuthOptions } from 'next-auth'
-import type { Session, User } from 'next-auth'
 import { SPOTIFY_CONFIG, API_ENDPOINTS } from '@/lib/constants'
 import { adminAdapterConfig } from '@/lib/firebaseAdmin'
 import { upsertUser } from '@/services/firebase/users'
 import { Timestamp } from 'firebase/firestore'
+import type { Session } from 'next-auth'
+import type { JWT } from 'next-auth/jwt'
 
 /**
  * @description Refreshes the Spotify access token using the refresh token.
@@ -81,13 +82,6 @@ async function getSpotifyUserProfile(accessToken: string) {
 /**
  * @description NextAuth configuration for Spotify OAuth with Firebase Admin SDK adapter.
  */
-// Get the correct URL for the current environment
-const getBaseUrl = () => {
-  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
-  return 'http://localhost:3000'
-}
-
 export const authOptions: NextAuthOptions = {
   providers: [
     SpotifyProvider({
@@ -202,10 +196,11 @@ export const authOptions: NextAuthOptions = {
       }
     },
 
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       const user = token.user as { name?: string, id?: string } | undefined
       session.user.id = user?.id as string
       session.user.name = user?.name ?? null
+        ; (session as any).accessToken = token.accessToken
         ; (session as any).error = token.error
       return session
     },

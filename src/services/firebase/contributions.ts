@@ -225,9 +225,9 @@ export async function getActiveContributions(playlistId: string): Promise<Databa
 /**
  * @description Gets all tracks from all contributions for a playlist.
  * @param {string} playlistId - Firestore playlist ID.
- * @returns {Promise<DatabaseResult<Array<{track: any, contributor: string}>>>} All tracks with contributor info or error.
+ * @returns {Promise<DatabaseResult<Array<{track: unknown, contributor: string}>>>} All tracks with contributor info or error.
  */
-export async function getAllContributedTracks(playlistId: string): Promise<DatabaseResult<Array<{ track: any, contributor: string }>>> {
+export async function getAllContributedTracks(playlistId: string): Promise<DatabaseResult<Array<{ track: unknown, contributor: string }>>> {
   try {
     const contributions = await getActiveContributions(playlistId)
 
@@ -238,7 +238,7 @@ export async function getAllContributedTracks(playlistId: string): Promise<Datab
       }
     }
 
-    const allTracks: Array<{ track: any, contributor: string }> = []
+    const allTracks: Array<{ track: unknown, contributor: string }> = []
 
     contributions.data.forEach(contribution => {
       contribution.tracks.forEach(track => {

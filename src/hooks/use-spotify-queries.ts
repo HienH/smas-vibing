@@ -109,7 +109,6 @@ export function useSMASPlaylist() {
  */
 export function useContributeSongs() {
     const queryClient = useQueryClient()
-    const { addToast } = useToast()
 
     return useMutation({
         mutationFn: async ({ playlistId, trackUris }: { playlistId: string; trackUris: string[] }) => {
@@ -126,7 +125,7 @@ export function useContributeSongs() {
 
             return response.json()
         },
-        onSuccess: (data, variables) => {
+        onSuccess: () => {
             // Invalidate and refetch playlist data
             queryClient.invalidateQueries({ queryKey: ['smas-playlist'] })
         },
@@ -141,7 +140,6 @@ export function useContributeSongs() {
  * @description Fetches sharing link data.
  */
 export function useSharingLink(linkSlug: string) {
-    const { addToast } = useToast()
 
     return useQuery({
         queryKey: ['sharing-link', linkSlug],

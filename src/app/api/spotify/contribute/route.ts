@@ -5,7 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getPlaylistById } from '@/services/firebase/playlists'
-import { getUserById, getUserBySpotifyUserId, updateUserTokens } from '@/services/firebase/users'
+import { getUserBySpotifyUserId, updateUserTokens } from '@/services/firebase/users'
 import { addTracksToPlaylist } from '@/lib/spotify'
 
 const SPOTIFY_TOKEN_ENDPOINT = 'https://accounts.spotify.com/api/token'

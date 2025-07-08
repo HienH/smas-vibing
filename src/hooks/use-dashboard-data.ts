@@ -64,6 +64,7 @@ export const useDashboardData = (userId?: string) => {
             }
           }
         } catch (error) {
+          console.log(error)
           if (isMounted) setHasError(true)
         } finally {
           if (isMounted) {

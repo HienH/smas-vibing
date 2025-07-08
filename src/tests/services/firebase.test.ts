@@ -5,6 +5,7 @@
  */
 
 import { jest } from '@jest/globals'
+import { Timestamp } from 'firebase/firestore'
 
 const mockUserData = { displayName: 'Test User', email: 'test@example.com', spotifyAccessToken: 'test-access-token', spotifyRefreshToken: 'test-refresh-token', spotifyTokenExpiresAt: new Date() }
 const mockPlaylistData = { spotifyPlaylistId: 'playlist123', ownerId: 'user123', name: 'Test Playlist', trackCount: 0, isActive: true }
@@ -24,7 +25,7 @@ jest.mock('@/services/firebase', () => ({
 }))
 
 // Import the tested functions after jest.mock so the mocks are used
-const {
+import {
   createUser,
   getUserById,
   updateUser,
@@ -34,7 +35,7 @@ const {
   getContributionById,
   createSharingLink,
   getSharingLinkById,
-} = require('@/services/firebase')
+} from '@/services/firebase'
 
 // Mock Firebase
 jest.mock('@/lib/firebase', () => ({
@@ -67,7 +68,9 @@ describe('Firebase Services', () => {
       imageUrl: 'https://example.com/image.jpg',
       spotifyAccessToken: 'test-access-token',
       spotifyRefreshToken: 'test-refresh-token',
-      spotifyTokenExpiresAt: new Date(),
+      spotifyTokenExpiresAt: Timestamp.now(),
+      spotifyProviderAccountId: 'test-provider-id',
+      spotifyUserId: 'test-spotify-user-id',
     }
 
     it('should create a user successfully', async () => {
@@ -99,6 +102,7 @@ describe('Firebase Services', () => {
       name: 'Test Playlist',
       description: 'Test playlist description',
       imageUrl: 'https://example.com/playlist.jpg',
+      spotifyUserId: 'test-spotify-user-id',
     }
 
     it('should create a playlist successfully', async () => {
@@ -151,6 +155,7 @@ describe('Firebase Services', () => {
       ownerId: mockUserId,
       ownerName: 'Test Owner',
       linkSlug: 'test-slug',
+      spotifyUserId: 'test-spotify-user-id',
     }
 
     it('should create a sharing link successfully', async () => {

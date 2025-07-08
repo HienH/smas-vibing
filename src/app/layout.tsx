@@ -4,7 +4,7 @@
  * Includes SessionProvider for NextAuth and global styling for the SMAS app.
  */
 import type { Metadata } from "next";
-import { Knewave, Geist, Geist_Mono, Luckiest_Guy } from "next/font/google";
+import { Knewave, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { APP_CONFIG } from "@/lib/constants";

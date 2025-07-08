@@ -5,7 +5,6 @@
  */
 'use client'
 
-import { useSession } from 'next-auth/react'
 import { LoadingState, ErrorMessage, useToast } from '@/components/ui'
 import { PlaylistCard } from '@/components/playlist/playlist-card'
 import { TopSongsCard } from '@/components/playlist/top-songs-card'
@@ -17,13 +16,17 @@ import { useTopSongs, useSMASPlaylist } from '@/hooks/use-spotify-queries'
 import { useFirebase } from '@/hooks/use-firebase'
 import { useEffect, useState } from 'react'
 import type { Contribution } from '@/types/firebase'
+import type { Session } from 'next-auth'
+
+interface DashboardContentProps {
+  session: Session
+}
 
 /**
  * @description Renders the main dashboard content with playlist and sharing functionality.
  * @returns {JSX.Element} The dashboard content component.
  */
-export function DashboardContent() {
-  const { data: session } = useSession()
+export function DashboardContent({ session }: DashboardContentProps) {
   const { addToast } = useToast()
   const { getPlaylistContributions, getUserSharingLink } = useFirebase()
 
@@ -66,7 +69,7 @@ export function DashboardContent() {
           addToast({
             type: 'error',
             title: 'Error',
-            message: 'Failed to load contribution data'
+            message: `Failed to load contribution data: ${error}`
           })
         } finally {
           setIsLoadingContributions(false)

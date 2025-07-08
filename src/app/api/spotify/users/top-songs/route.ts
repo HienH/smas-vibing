@@ -16,7 +16,7 @@ import type { Song } from '@/stores/playlist-store'
 export async function GET(request: NextRequest) {
   try {
     const authData = await validateApiRequest(request)
-    
+
     if (!authData) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -38,14 +38,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(songs)
   } catch (error) {
     console.error('Error fetching top songs:', error)
-    
+
     if (error instanceof SpotifyAPIError && error.code === 'TOKEN_EXPIRED') {
       return NextResponse.json(
-        { error: 'Token expired, please refresh the page' }, 
+        { error: 'Token expired, please refresh the page' },
         { status: 401 }
       )
     }
-    
+
     return NextResponse.json(
       { error: 'Failed to fetch top songs' },
       { status: 500 }

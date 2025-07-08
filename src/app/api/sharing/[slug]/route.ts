@@ -8,7 +8,7 @@ import { getSharingLinkBySlug } from '@/services/firebase/sharing-links'
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { slug: string } }
+    { params }: any
 ) {
     try {
         const { slug } = params

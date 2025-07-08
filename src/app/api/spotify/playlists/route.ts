@@ -13,7 +13,7 @@ import {
 } from '@/lib/spotify'
 import { validateApiRequest } from '@/lib/auth'
 import { SPOTIFY_CONFIG, APP_CONFIG } from '@/lib/constants'
-import type { Playlist as StorePlaylist, Song } from '@/stores/playlist-store'
+import type { Playlist as StorePlaylist } from '@/stores/playlist-store'
 import { getOrCreatePlaylist, updatePlaylist } from '@/services/firebase/playlists'
 import smasCoverBase64 from '@/public/smas-cover-base64'
 import { createSharingLink, generateUniqueLinkSlug, getSharingLinkByOwner, updateSharingLink } from '@/services/firebase/sharing-links'

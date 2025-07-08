@@ -5,6 +5,7 @@
  */
 import { useState } from 'react'
 import { type Song } from '@/stores/playlist-store'
+import Image from 'next/image'
 
 interface SongItemProps {
   song: Song
@@ -24,14 +25,18 @@ export function SongItem({ song }: SongItemProps) {
 
   return (
     <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg w-full">
+
       {song.imageUrl && !imageError ? (
-        <img
-          src={song.imageUrl}
+        <Image
+          src={song.imageUrl || '/placeholder-album.jpg'}
           alt={`${song.album} cover`}
           className="w-12 h-12 rounded-md object-cover"
           onError={handleImageError}
           loading="lazy"
+          width={48}
+          height={48}
         />
+
       ) : (
         <div
           className="w-12 h-12 rounded-md bg-gray-200 flex items-center justify-center"

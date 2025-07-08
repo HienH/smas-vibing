@@ -33,12 +33,12 @@ export function useSpotifyClient() {
         window.location.href = '/'
         return
       }
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.error || 'Failed to fetch top songs')
       }
-      
+
       const songs: Song[] = await response.json()
       setTopSongs(songs)
     } catch (error) {
@@ -64,18 +64,18 @@ export function useSpotifyClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
-      
+
       if (response.status === 401) {
         // Token expired, redirect to login
         window.location.href = '/'
         return
       }
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.error || 'Failed to create playlist')
       }
-      
+
       const playlist: Playlist = await response.json()
       setPlaylist(playlist)
     } catch (error) {

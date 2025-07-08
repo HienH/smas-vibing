@@ -51,11 +51,10 @@ export function ActivityTimeline({ contributions }: ActivityTimelineProps) {
             <div key={contribution.id} className="flex items-start space-x-3">
               {/* Timeline dot */}
               <div className="flex-shrink-0">
-                <div className={`w-3 h-3 rounded-full ${
-                  index === 0 ? 'bg-green-500' : 'bg-gray-300'
-                }`} />
+                <div className={`w-3 h-3 rounded-full ${index === 0 ? 'bg-green-500' : 'bg-gray-300'
+                  }`} />
               </div>
-              
+
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
@@ -71,7 +70,7 @@ export function ActivityTimeline({ contributions }: ActivityTimelineProps) {
                 </p>
                 {contribution.tracks.length > 0 && (
                   <p className="text-xs text-gray-500 mt-1">
-                    "{contribution.tracks[0].name}" by {contribution.tracks[0].artist}
+                    &quot;{contribution.tracks[0].name}&quot; by {contribution.tracks[0].artist}
                     {contribution.tracks.length > 1 && ` +${contribution.tracks.length - 1} more`}
                   </p>
                 )}
@@ -79,7 +78,7 @@ export function ActivityTimeline({ contributions }: ActivityTimelineProps) {
             </div>
           ))}
         </div>
-        
+
         {contributions.length > 7 && (
           <div className="mt-4 pt-3 border-t border-gray-200">
             <p className="text-xs text-gray-500 text-center">

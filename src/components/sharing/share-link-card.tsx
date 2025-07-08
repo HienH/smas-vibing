@@ -92,7 +92,7 @@ export function ShareLinkCard() {
             </h3>
             <ul className="text-sm text-green-700 space-y-1">
               <li>• Share this link with your friends</li>
-              <li>• They'll add their top 5 songs to your playlist</li>
+              <li>• They&apos;ll add their top 5 songs to your playlist</li>
               <li>• You can contribute back to their playlists too!</li>
             </ul>
           </div>

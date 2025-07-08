@@ -3,15 +3,12 @@
  *
  * Tests the playlist API route logic for creating and reusing SMAS playlists.
  */
-
-import { NextRequest } from 'next/server'
-import { mockSpotifyData } from '@/mocks/spotify-api'
 import { createMockSession } from '@/test-utils/data-factories'
 
 // Mock Next.js server components
 jest.mock('next/server', () => ({
   NextRequest: class {
-    constructor(public url: string, public init?: RequestInit) {}
+    constructor(public url: string, public init?: RequestInit) { }
   },
   NextResponse: {
     json: (data: any, init?: ResponseInit) => ({
@@ -54,7 +51,7 @@ describe('Playlist API Route', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    
+
     // Mock successful auth validation
     mockValidateApiRequest.mockResolvedValue({
       accessToken: mockAccessToken,
@@ -80,7 +77,7 @@ describe('Playlist API Route', () => {
 
       // Test the logic directly
       const userPlaylists = await mockGetUserPlaylists(mockAccessToken)
-      let smasPlaylist = userPlaylists.items.find((playlist: any) => 
+      let smasPlaylist = userPlaylists.items.find((playlist: any) =>
         playlist.name === 'SMAS'
       )
 
@@ -139,7 +136,7 @@ describe('Playlist API Route', () => {
 
       // Test the logic directly
       const userPlaylists = await mockGetUserPlaylists(mockAccessToken)
-      let smasPlaylist = userPlaylists.items.find((playlist: any) => 
+      let smasPlaylist = userPlaylists.items.find((playlist: any) =>
         playlist.name === 'SMAS'
       )
 
@@ -196,7 +193,7 @@ describe('Playlist API Route', () => {
 
       // Test the logic directly
       const userPlaylists = await mockGetUserPlaylists(mockAccessToken)
-      let smasPlaylist = userPlaylists.items.find((playlist: any) => 
+      let smasPlaylist = userPlaylists.items.find((playlist: any) =>
         playlist.name === 'SMAS'
       )
 
