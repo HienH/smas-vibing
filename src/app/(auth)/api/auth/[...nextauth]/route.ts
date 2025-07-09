@@ -8,6 +8,7 @@ import { upsertUser } from '@/services/firebase/users'
 import { Timestamp } from 'firebase/firestore'
 import type { Session } from 'next-auth'
 import type { JWT } from 'next-auth/jwt'
+import { getUserByNextAuthId } from '@/services/firebase/users'
 
 /**
  * @description Refreshes the Spotify access token using the refresh token.
@@ -138,7 +139,14 @@ export const authOptions: NextAuthOptions = {
           const spotifyUserProfile = await getSpotifyUserProfile(account.access_token)
           console.log('🔍 signIn callback: Got Spotify profile:', spotifyUserProfile.id)
 
-          // Store user data in Firestore
+          // Check if user data already exists in accounts collection
+          const existingUser = await getUserByNextAuthId(user.id)
+          if (existingUser.success && existingUser.data) {
+            console.log('🔍 signIn callback: User data already exists, skipping upsert')
+            return true
+          }
+
+          // Store user data in Firestore (this will go to accounts collection via NextAuth adapter)
           const expiresAt = account.expires_at
             ? Timestamp.fromMillis(account.expires_at * 1000)
             : undefined

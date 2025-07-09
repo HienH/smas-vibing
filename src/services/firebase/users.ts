@@ -315,7 +315,30 @@ export async function getUserByNextAuthId(nextAuthUserId: string): Promise<Datab
       const accountData = accountDoc.data()
       console.log('🔍 getUserByNextAuthId: Found account in accounts collection:', accountData)
 
-      // Try to find user by provider account ID
+      // Check if this account has our custom Spotify data
+      if (accountData.spotifyUserId && accountData.spotifyProviderAccountId) {
+        console.log('🔍 getUserByNextAuthId: Account has Spotify data, using it directly')
+        // Convert account data to UserProfile format
+        const userProfile: UserProfile = {
+          id: nextAuthUserId,
+          spotifyUserId: accountData.spotifyUserId,
+          spotifyProviderAccountId: accountData.spotifyProviderAccountId,
+          displayName: accountData.displayName || '',
+          email: accountData.email || '',
+          imageUrl: accountData.imageUrl,
+          spotifyAccessToken: accountData.spotifyAccessToken,
+          spotifyRefreshToken: accountData.spotifyRefreshToken,
+          spotifyTokenExpiresAt: accountData.spotifyTokenExpiresAt,
+          createdAt: accountData.createdAt,
+          updatedAt: accountData.updatedAt,
+        }
+        return {
+          success: true,
+          data: userProfile,
+        }
+      }
+
+      // Try to find user by provider account ID as fallback
       if (accountData.providerAccountId) {
         const providerResult = await getUserBySpotifyProviderAccountId(accountData.providerAccountId)
         if (providerResult.success && providerResult.data) {
