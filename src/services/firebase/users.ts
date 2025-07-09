@@ -282,7 +282,6 @@ export async function getUserBySpotifyId(spotifyId: string): Promise<DatabaseRes
  */
 export async function getUserByNextAuthId(nextAuthUserId: string): Promise<DatabaseResult<UserProfile>> {
   try {
-    console.log('🔍 getUserByNextAuthId: Looking for user with ID:', nextAuthUserId)
 
     const accountsRef = db.collection('accounts')
     const querySnap = await accountsRef.where('userId', '==', nextAuthUserId).get()
@@ -290,11 +289,9 @@ export async function getUserByNextAuthId(nextAuthUserId: string): Promise<Datab
     if (!querySnap.empty) {
       const accountDoc = querySnap.docs[0]
       const accountData = accountDoc.data()
-      console.log('🔍 getUserByNextAuthId: Found account in accounts collection:', accountData)
 
       // Check if this account has our Spotify data
       if (accountData.providerAccountId) {
-        console.log('🔍 getUserByNextAuthId: Account has Spotify data, using it directly')
 
         // Use providerAccountId as spotifyUserId since they're the same for Spotify
         const spotifyUserId = accountData.spotifyUserId || accountData.providerAccountId
