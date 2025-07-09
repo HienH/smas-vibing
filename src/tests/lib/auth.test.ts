@@ -49,8 +49,8 @@ describe('Authentication Utilities', () => {
       expect(result).toBeNull()
     })
 
-    it('should return null when session has no user email', async () => {
-      const invalidSession = { ...mockAuthData.session, user: { ...mockAuthData.session.user, email: null } }
+    it('should return null when session has no user id', async () => {
+      const invalidSession = { ...mockAuthData.session, user: { ...mockAuthData.session.user, id: null } }
       mockGetServerSession.mockResolvedValueOnce(invalidSession)
 
       const result = await validateSession()
