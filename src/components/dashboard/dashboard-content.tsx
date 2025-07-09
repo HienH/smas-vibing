@@ -5,7 +5,7 @@
  */
 'use client'
 
-import { LoadingState, ErrorMessage, useToast } from '@/components/ui'
+import { LoadingState, ErrorMessage } from '@/components/ui'
 import { PlaylistCard } from '@/components/playlist/playlist-card'
 import { TopSongsCard } from '@/components/playlist/top-songs-card'
 import { ShareLinkCard } from '@/components/sharing/share-link-card'
