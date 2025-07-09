@@ -286,4 +286,55 @@ export async function getUserBySpotifyId(spotifyId: string): Promise<DatabaseRes
       error: error instanceof Error ? error.message : 'Failed to get user by Spotify ID',
     }
   }
+}
+
+/**
+ * @description Retrieves a user profile by NextAuth user ID, checking both users and accounts collections.
+ * @param {string} nextAuthUserId - NextAuth user ID.
+ * @returns {Promise<DatabaseResult<UserProfile>>} User profile or error.
+ */
+export async function getUserByNextAuthId(nextAuthUserId: string): Promise<DatabaseResult<UserProfile>> {
+  try {
+    console.log('🔍 getUserByNextAuthId: Looking for user with ID:', nextAuthUserId)
+
+    // First try to find in users collection (our custom data)
+    const userResult = await getUserById(nextAuthUserId)
+    if (userResult.success && userResult.data) {
+      console.log('🔍 getUserByNextAuthId: Found user in users collection')
+      return userResult
+    }
+
+    // If not found in users, try to find in accounts collection
+    console.log('🔍 getUserByNextAuthId: User not found in users collection, checking accounts...')
+    const accountsRef = collection(db, 'accounts')
+    const q = query(accountsRef, where('userId', '==', nextAuthUserId))
+    const querySnapshot = await getDocs(q)
+
+    if (!querySnapshot.empty) {
+      const accountDoc = querySnapshot.docs[0]
+      const accountData = accountDoc.data()
+      console.log('🔍 getUserByNextAuthId: Found account in accounts collection:', accountData)
+
+      // Try to find user by provider account ID
+      if (accountData.providerAccountId) {
+        const providerResult = await getUserBySpotifyProviderAccountId(accountData.providerAccountId)
+        if (providerResult.success && providerResult.data) {
+          console.log('🔍 getUserByNextAuthId: Found user by provider account ID')
+          return providerResult
+        }
+      }
+    }
+
+    console.log('🔍 getUserByNextAuthId: User not found in any collection')
+    return {
+      success: false,
+      error: 'User not found in users or accounts collection',
+    }
+  } catch (error) {
+    console.error('🔍 getUserByNextAuthId: Error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get user by NextAuth ID',
+    }
+  }
 } 

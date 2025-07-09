@@ -17,7 +17,7 @@ import type { Playlist as StorePlaylist } from '@/stores/playlist-store'
 import { getOrCreatePlaylist, updatePlaylist } from '@/services/firebase/playlists'
 import smasCoverBase64 from '@/public/smas-cover-base64'
 import { createSharingLink, generateUniqueLinkSlug, getSharingLinkByOwner, updateSharingLink } from '@/services/firebase/sharing-links'
-import { getUserById } from '@/services/firebase/users'
+import { getUserByNextAuthId } from '@/services/firebase/users'
 
 /**
  * @description Creates or retrieves the user's SMAS playlist and syncs with Firestore.
@@ -33,12 +33,17 @@ export async function POST(request: NextRequest) {
     const { accessToken, session } = authData
     const internalUserId = session.user.id
 
-    // Get user profile to get spotifyUserId
-    const userResult = await getUserById(internalUserId)
+    console.log('🔍 POST /api/spotify/playlists: Processing request for user:', internalUserId)
+
+    // Get user profile to get spotifyUserId - check both users and accounts collections
+    const userResult = await getUserByNextAuthId(internalUserId)
     if (!userResult.success || !userResult.data) {
+      console.error('🔍 POST /api/spotify/playlists: User not found:', userResult.error)
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
     const spotifyUserId = userResult.data.spotifyUserId
+
+    console.log('🔍 POST /api/spotify/playlists: Found user with spotifyUserId:', spotifyUserId)
 
     // 1. Check if user already has a SMAS playlist on Spotify
     const userPlaylists = await getUserPlaylists(accessToken)

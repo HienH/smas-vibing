@@ -129,18 +129,22 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
   callbacks: {
     async signIn({ user, account }) {
+      console.log('🔍 signIn callback: Starting for user:', user?.id)
 
       if (account?.provider === 'spotify' && user && account.providerAccountId && account.access_token) {
         try {
+          console.log('🔍 signIn callback: Getting Spotify user profile...')
           // Get Spotify user profile to get the spotifyUserId
           const spotifyUserProfile = await getSpotifyUserProfile(account.access_token)
+          console.log('🔍 signIn callback: Got Spotify profile:', spotifyUserProfile.id)
 
           // Store user data in Firestore
           const expiresAt = account.expires_at
             ? Timestamp.fromMillis(account.expires_at * 1000)
             : undefined
 
-          await upsertUser({
+          console.log('🔍 signIn callback: Upserting user data...')
+          const upsertResult = await upsertUser({
             id: user.id,
             spotifyProviderAccountId: account.providerAccountId,
             spotifyUserId: spotifyUserProfile.id,
@@ -152,10 +156,24 @@ export const authOptions: NextAuthOptions = {
             spotifyTokenExpiresAt: expiresAt,
           })
 
+          if (upsertResult.success) {
+            console.log('🔍 signIn callback: User data upserted successfully')
+          } else {
+            console.error('🔍 signIn callback: Failed to upsert user data:', upsertResult.error)
+          }
+
         } catch (error) {
           console.error('❌ Failed to store user data:', error)
           // Don't block sign in if Firestore fails
         }
+      } else {
+        console.log('🔍 signIn callback: Missing required data for user storage:', {
+          hasAccount: !!account,
+          provider: account?.provider,
+          hasUser: !!user,
+          hasProviderAccountId: !!account?.providerAccountId,
+          hasAccessToken: !!account?.access_token
+        })
       }
       return true
     },
