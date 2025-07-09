@@ -4,24 +4,13 @@
  * Handles playlist creation, updates, and retrieval operations.
  */
 
-import { 
-  doc, 
-  setDoc, 
-  getDoc, 
-  updateDoc, 
-  collection,
-  query,
-  where,
-  getDocs,
-  serverTimestamp,
-  Timestamp 
-} from 'firebase/firestore'
-import { db } from '@/lib/firebase'
-import { 
-  Playlist, 
-  CreatePlaylistData, 
-  DatabaseResult, 
-  COLLECTIONS 
+import admin from 'firebase-admin'
+import { adminDb as db } from '@/lib/firebaseAdmin'
+import {
+  Playlist,
+  CreatePlaylistData,
+  DatabaseResult,
+  COLLECTIONS
 } from '@/types/firebase'
 
 /**
@@ -31,9 +20,9 @@ import {
  */
 export async function createPlaylist(playlistData: CreatePlaylistData & { sharingLinkId?: string }): Promise<DatabaseResult<Playlist>> {
   try {
-    const now = Timestamp.now()
-    const playlistRef = doc(collection(db, COLLECTIONS.PLAYLISTS))
-    
+    const now = admin.firestore.Timestamp.now()
+    const playlistRef = db.collection(COLLECTIONS.PLAYLISTS).doc()
+
     const playlist: Playlist = {
       id: playlistRef.id,
       spotifyPlaylistId: playlistData.spotifyPlaylistId,
@@ -47,8 +36,8 @@ export async function createPlaylist(playlistData: CreatePlaylistData & { sharin
       ...(playlistData.sharingLinkId ? { sharingLinkId: playlistData.sharingLinkId } : {}),
     }
 
-    await setDoc(playlistRef, playlist)
-  
+    await playlistRef.set(playlist)
+
     return {
       success: true,
       data: playlist,
@@ -68,16 +57,16 @@ export async function createPlaylist(playlistData: CreatePlaylistData & { sharin
  */
 export async function getPlaylistById(playlistId: string): Promise<DatabaseResult<Playlist>> {
   try {
-    const playlistRef = doc(db, COLLECTIONS.PLAYLISTS, playlistId)
-    const playlistSnap = await getDoc(playlistRef)
-    
-    if (!playlistSnap.exists()) {
+    const playlistRef = db.collection(COLLECTIONS.PLAYLISTS).doc(playlistId)
+    const playlistSnap = await playlistRef.get()
+
+    if (!playlistSnap.exists) {
       return {
         success: false,
         error: 'Playlist not found',
       }
     }
-    
+
     return {
       success: true,
       data: playlistSnap.data() as Playlist,
@@ -97,18 +86,17 @@ export async function getPlaylistById(playlistId: string): Promise<DatabaseResul
  */
 export async function getPlaylistBySpotifyId(spotifyPlaylistId: string): Promise<DatabaseResult<Playlist>> {
   try {
-    const playlistsRef = collection(db, COLLECTIONS.PLAYLISTS)
-    const q = query(playlistsRef, where('spotifyPlaylistId', '==', spotifyPlaylistId))
-    const querySnapshot = await getDocs(q)
-    
-    if (querySnapshot.empty) {
+    const playlistsRef = db.collection(COLLECTIONS.PLAYLISTS)
+    const querySnap = await playlistsRef.where('spotifyPlaylistId', '==', spotifyPlaylistId).get()
+
+    if (querySnap.empty) {
       return {
         success: false,
         error: 'Playlist not found',
       }
     }
-    
-    const playlistDoc = querySnapshot.docs[0]
+
+    const playlistDoc = querySnap.docs[0]
     return {
       success: true,
       data: { id: playlistDoc.id, ...playlistDoc.data() } as Playlist,
@@ -128,15 +116,14 @@ export async function getPlaylistBySpotifyId(spotifyPlaylistId: string): Promise
  */
 export async function getPlaylistsByOwner(spotifyUserId: string): Promise<DatabaseResult<Playlist[]>> {
   try {
-    const playlistsRef = collection(db, COLLECTIONS.PLAYLISTS)
-    const q = query(playlistsRef, where('spotifyUserId', '==', spotifyUserId), where('isActive', '==', true))
-    const querySnapshot = await getDocs(q)
-    
-    const playlists: Playlist[] = querySnapshot.docs.map(doc => ({
+    const playlistsRef = db.collection(COLLECTIONS.PLAYLISTS)
+    const querySnap = await playlistsRef.where('spotifyUserId', '==', spotifyUserId).where('isActive', '==', true).get()
+
+    const playlists: Playlist[] = querySnap.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
     })) as Playlist[]
-    
+
     return {
       success: true,
       data: playlists,
@@ -160,10 +147,10 @@ export async function updatePlaylist(
   updateData: Partial<Pick<Playlist, 'name' | 'description' | 'trackCount' | 'isActive' | 'sharingLinkId'>>
 ): Promise<DatabaseResult<void>> {
   try {
-    const playlistRef = doc(db, COLLECTIONS.PLAYLISTS, playlistId)
-    await updateDoc(playlistRef, {
+    const playlistRef = db.collection(COLLECTIONS.PLAYLISTS).doc(playlistId)
+    await playlistRef.update({
       ...updateData,
-      updatedAt: serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     })
     return {
       success: true,
@@ -207,11 +194,11 @@ export async function getOrCreatePlaylist(playlistData: CreatePlaylistData): Pro
   try {
     // Check if playlist already exists
     const existingPlaylist = await getPlaylistBySpotifyId(playlistData.spotifyPlaylistId)
-    
+
     if (existingPlaylist.success && existingPlaylist.data) {
       return existingPlaylist
     }
-    
+
     // Create new playlist
     return await createPlaylist(playlistData)
   } catch (error) {

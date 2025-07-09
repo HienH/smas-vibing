@@ -4,19 +4,8 @@
  * Handles user creation, updates, and retrieval operations.
  */
 
-import {
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
-  serverTimestamp,
-  Timestamp,
-  collection,
-  query,
-  where,
-  getDocs
-} from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import admin from 'firebase-admin'
+import { adminDb as db } from '@/lib/firebaseAdmin'
 import {
   UserProfile,
   CreateUserData,
@@ -31,8 +20,8 @@ import {
  */
 export async function createUser(userData: CreateUserData): Promise<DatabaseResult<UserProfile>> {
   try {
-    const now = Timestamp.now()
-    const userRef = doc(db, COLLECTIONS.USERS, userData.id)
+    const now = admin.firestore.Timestamp.now()
+    const userRef = db.collection(COLLECTIONS.USERS).doc(userData.id)
 
     const userProfile: UserProfile = {
       id: userData.id,
@@ -48,7 +37,7 @@ export async function createUser(userData: CreateUserData): Promise<DatabaseResu
       updatedAt: now,
     }
 
-    await setDoc(userRef, userProfile)
+    await userRef.set(userProfile)
 
     return {
       success: true,
@@ -69,10 +58,10 @@ export async function createUser(userData: CreateUserData): Promise<DatabaseResu
  */
 export async function getUserById(userId: string): Promise<DatabaseResult<UserProfile>> {
   try {
-    const userRef = doc(db, COLLECTIONS.USERS, userId)
-    const userSnap = await getDoc(userRef)
+    const userRef = db.collection(COLLECTIONS.USERS).doc(userId)
+    const userSnap = await userRef.get()
 
-    if (!userSnap.exists()) {
+    if (!userSnap.exists) {
       return {
         success: false,
         error: 'User not found',
@@ -102,11 +91,11 @@ export async function updateUser(
   updateData: Partial<Pick<UserProfile, 'displayName' | 'email' | 'imageUrl' | 'spotifyAccessToken' | 'spotifyRefreshToken' | 'spotifyTokenExpiresAt' | 'spotifyUserId' | 'spotifyProviderAccountId'>>
 ): Promise<DatabaseResult<void>> {
   try {
-    const userRef = doc(db, COLLECTIONS.USERS, userId)
+    const userRef = db.collection(COLLECTIONS.USERS).doc(userId)
 
-    await updateDoc(userRef, {
+    await userRef.update({
       ...updateData,
-      updatedAt: serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     })
 
     return {
@@ -135,7 +124,7 @@ export async function updateUserTokens(
   expiresIn: number
 ): Promise<DatabaseResult<void>> {
   try {
-    const expiresAt = Timestamp.fromMillis(Date.now() + expiresIn * 1000)
+    const expiresAt = admin.firestore.Timestamp.fromMillis(Date.now() + expiresIn * 1000)
 
     return await updateUser(userId, {
       spotifyAccessToken: accessToken,
@@ -202,18 +191,17 @@ export async function upsertUser(userData: CreateUserData): Promise<DatabaseResu
  */
 export async function getUserBySpotifyProviderAccountId(spotifyProviderAccountId: string): Promise<DatabaseResult<UserProfile>> {
   try {
-    const usersRef = collection(db, COLLECTIONS.USERS)
-    const q = query(usersRef, where('spotifyProviderAccountId', '==', spotifyProviderAccountId))
-    const querySnapshot = await getDocs(q)
+    const usersRef = db.collection(COLLECTIONS.USERS)
+    const querySnap = await usersRef.where('spotifyProviderAccountId', '==', spotifyProviderAccountId).get()
 
-    if (querySnapshot.empty) {
+    if (querySnap.empty) {
       return {
         success: false,
         error: 'User not found',
       }
     }
 
-    const userDoc = querySnapshot.docs[0]
+    const userDoc = querySnap.docs[0]
     return {
       success: true,
       data: { id: userDoc.id, ...userDoc.data() } as UserProfile,
@@ -233,18 +221,17 @@ export async function getUserBySpotifyProviderAccountId(spotifyProviderAccountId
  */
 export async function getUserBySpotifyUserId(spotifyUserId: string): Promise<DatabaseResult<UserProfile>> {
   try {
-    const usersRef = collection(db, COLLECTIONS.USERS)
-    const q = query(usersRef, where('spotifyUserId', '==', spotifyUserId))
-    const querySnapshot = await getDocs(q)
+    const usersRef = db.collection(COLLECTIONS.USERS)
+    const querySnap = await usersRef.where('spotifyUserId', '==', spotifyUserId).get()
 
-    if (querySnapshot.empty) {
+    if (querySnap.empty) {
       return {
         success: false,
         error: 'User not found',
       }
     }
 
-    const userDoc = querySnapshot.docs[0]
+    const userDoc = querySnap.docs[0]
     return {
       success: true,
       data: { id: userDoc.id, ...userDoc.data() } as UserProfile,
@@ -297,32 +284,26 @@ export async function getUserByNextAuthId(nextAuthUserId: string): Promise<Datab
   try {
     console.log('🔍 getUserByNextAuthId: Looking for user with ID:', nextAuthUserId)
 
-    // First try to find in users collection (our custom data)
-    const userResult = await getUserById(nextAuthUserId)
-    if (userResult.success && userResult.data) {
-      console.log('🔍 getUserByNextAuthId: Found user in users collection')
-      return userResult
-    }
+    const accountsRef = db.collection('accounts')
+    const querySnap = await accountsRef.where('userId', '==', nextAuthUserId).get()
 
-    // If not found in users, try to find in accounts collection
-    console.log('🔍 getUserByNextAuthId: User not found in users collection, checking accounts...')
-    const accountsRef = collection(db, 'accounts')
-    const q = query(accountsRef, where('userId', '==', nextAuthUserId))
-    const querySnapshot = await getDocs(q)
-
-    if (!querySnapshot.empty) {
-      const accountDoc = querySnapshot.docs[0]
+    if (!querySnap.empty) {
+      const accountDoc = querySnap.docs[0]
       const accountData = accountDoc.data()
       console.log('🔍 getUserByNextAuthId: Found account in accounts collection:', accountData)
 
-      // Check if this account has our custom Spotify data
-      if (accountData.spotifyUserId && accountData.spotifyProviderAccountId) {
+      // Check if this account has our Spotify data
+      if (accountData.providerAccountId) {
         console.log('🔍 getUserByNextAuthId: Account has Spotify data, using it directly')
-        // Convert account data to UserProfile format
+
+        // Use providerAccountId as spotifyUserId since they're the same for Spotify
+        const spotifyUserId = accountData.spotifyUserId || accountData.providerAccountId
+        const spotifyProviderAccountId = accountData.spotifyProviderAccountId || accountData.providerAccountId
+
         const userProfile: UserProfile = {
           id: nextAuthUserId,
-          spotifyUserId: accountData.spotifyUserId,
-          spotifyProviderAccountId: accountData.spotifyProviderAccountId,
+          spotifyUserId: spotifyUserId,
+          spotifyProviderAccountId: spotifyProviderAccountId,
           displayName: accountData.displayName || '',
           email: accountData.email || '',
           imageUrl: accountData.imageUrl,
@@ -337,21 +318,19 @@ export async function getUserByNextAuthId(nextAuthUserId: string): Promise<Datab
           data: userProfile,
         }
       }
-
-      // Try to find user by provider account ID as fallback
-      if (accountData.providerAccountId) {
-        const providerResult = await getUserBySpotifyProviderAccountId(accountData.providerAccountId)
-        if (providerResult.success && providerResult.data) {
-          console.log('🔍 getUserByNextAuthId: Found user by provider account ID')
-          return providerResult
-        }
-      }
     }
 
-    console.log('🔍 getUserByNextAuthId: User not found in any collection')
+    // Fallback: try to find in users collection (basic user data)
+    const userResult = await getUserById(nextAuthUserId)
+    if (userResult.success && userResult.data) {
+      console.log('🔍 getUserByNextAuthId: Found user in users collection (but no Spotify data)')
+      return userResult
+    }
+
+    console.log('🔍 getUserByNextAuthId: User not found or missing Spotify data')
     return {
       success: false,
-      error: 'User not found in users or accounts collection',
+      error: 'User not found or missing Spotify data',
     }
   } catch (error) {
     console.error('🔍 getUserByNextAuthId: Error:', error)

@@ -4,17 +4,8 @@
  * Handles contribution creation, validation, and retrieval operations.
  */
 
-import {
-  doc,
-  setDoc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  Timestamp
-} from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import admin from 'firebase-admin'
+import { adminDb as db } from '@/lib/firebaseAdmin'
 import {
   Contribution,
   CreateContributionData,
@@ -29,9 +20,9 @@ import {
  */
 export async function createContribution(contributionData: CreateContributionData): Promise<DatabaseResult<Contribution>> {
   try {
-    const now = Timestamp.now()
-    const expiresAt = Timestamp.fromMillis(now.toMillis() + 4 * 7 * 24 * 60 * 60 * 1000) // 4 weeks
-    const contributionRef = doc(collection(db, COLLECTIONS.CONTRIBUTIONS))
+    const now = admin.firestore.Timestamp.now()
+    const expiresAt = admin.firestore.Timestamp.fromMillis(now.toMillis() + 4 * 7 * 24 * 60 * 60 * 1000) // 4 weeks
+    const contributionRef = db.collection(COLLECTIONS.CONTRIBUTIONS).doc()
 
     const contribution: Contribution = {
       id: contributionRef.id,
@@ -43,7 +34,7 @@ export async function createContribution(contributionData: CreateContributionDat
       expiresAt,
     }
 
-    await setDoc(contributionRef, contribution)
+    await contributionRef.set(contribution)
 
     return {
       success: true,
@@ -65,10 +56,10 @@ export async function createContribution(contributionData: CreateContributionDat
  */
 export async function getContributionById(contributionId: string): Promise<DatabaseResult<Contribution>> {
   try {
-    const contributionRef = doc(db, COLLECTIONS.CONTRIBUTIONS, contributionId)
-    const contributionSnap = await getDoc(contributionRef)
+    const contributionRef = db.collection(COLLECTIONS.CONTRIBUTIONS).doc(contributionId)
+    const contributionSnap = await contributionRef.get()
 
-    if (!contributionSnap.exists()) {
+    if (!contributionSnap.exists) {
       return {
         success: false,
         error: 'Contribution not found',
@@ -94,9 +85,9 @@ export async function getContributionById(contributionId: string): Promise<Datab
  */
 export async function getContributionsByPlaylist(playlistId: string): Promise<DatabaseResult<Contribution[]>> {
   try {
-    const contributionsRef = collection(db, COLLECTIONS.CONTRIBUTIONS)
-    const q = query(contributionsRef, where('playlistId', '==', playlistId))
-    const querySnapshot = await getDocs(q)
+    const contributionsRef = db.collection(COLLECTIONS.CONTRIBUTIONS)
+    const q = contributionsRef.where('playlistId', '==', playlistId)
+    const querySnapshot = await q.get()
 
     const contributions: Contribution[] = querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -122,9 +113,9 @@ export async function getContributionsByPlaylist(playlistId: string): Promise<Da
  */
 export async function getContributionsByUser(contributorId: string): Promise<DatabaseResult<Contribution[]>> {
   try {
-    const contributionsRef = collection(db, COLLECTIONS.CONTRIBUTIONS)
-    const q = query(contributionsRef, where('contributorId', '==', contributorId))
-    const querySnapshot = await getDocs(q)
+    const contributionsRef = db.collection(COLLECTIONS.CONTRIBUTIONS)
+    const q = contributionsRef.where('contributorId', '==', contributorId)
+    const querySnapshot = await q.get()
 
     const contributions: Contribution[] = querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -154,15 +145,10 @@ export async function checkUserContribution(
   contributorId: string
 ): Promise<DatabaseResult<{ hasContributed: boolean, contribution?: Contribution }>> {
   try {
-    const contributionsRef = collection(db, COLLECTIONS.CONTRIBUTIONS)
-    const q = query(
-      contributionsRef,
-      where('playlistId', '==', playlistId),
-      where('contributorId', '==', contributorId)
-    )
-    const querySnapshot = await getDocs(q)
+    const contributionsRef = db.collection(COLLECTIONS.CONTRIBUTIONS)
+    const querySnap = await contributionsRef.where('playlistId', '==', playlistId).where('contributorId', '==', contributorId).get()
 
-    if (querySnapshot.empty) {
+    if (querySnap.empty) {
       return {
         success: true,
         data: { hasContributed: false },
@@ -170,11 +156,11 @@ export async function checkUserContribution(
     }
 
     const contribution = {
-      id: querySnapshot.docs[0].id,
-      ...querySnapshot.docs[0].data(),
+      id: querySnap.docs[0].id,
+      ...querySnap.docs[0].data(),
     } as Contribution
 
-    const now = Timestamp.now()
+    const now = admin.firestore.Timestamp.now()
     const isExpired = contribution.expiresAt.toMillis() < now.toMillis()
 
     return {
@@ -205,7 +191,7 @@ export async function getActiveContributions(playlistId: string): Promise<Databa
       return contributions
     }
 
-    const now = Timestamp.now()
+    const now = admin.firestore.Timestamp.now()
     const activeContributions = contributions.data.filter(
       contribution => contribution.expiresAt.toMillis() > now.toMillis()
     )

@@ -5,6 +5,7 @@
  */
 
 import { Timestamp } from 'firebase/firestore'
+import admin from 'firebase-admin'
 
 /**
  * @description User profile data stored in Firestore.
@@ -18,9 +19,9 @@ export interface UserProfile {
   imageUrl?: string
   spotifyAccessToken?: string
   spotifyRefreshToken?: string
-  spotifyTokenExpiresAt?: Timestamp
-  createdAt: Timestamp
-  updatedAt: Timestamp
+  spotifyTokenExpiresAt?: admin.firestore.Timestamp
+  createdAt: admin.firestore.Timestamp
+  updatedAt: admin.firestore.Timestamp
 }
 
 /**
@@ -33,8 +34,8 @@ export interface Playlist {
   name: string
   description?: string
   trackCount: number
-  createdAt: Timestamp
-  updatedAt: Timestamp
+  createdAt: admin.firestore.Timestamp
+  updatedAt: admin.firestore.Timestamp
   isActive: boolean
   sharingLinkId?: string // Firestore sharing link ID for this playlist
 }
@@ -47,9 +48,9 @@ export interface Contribution {
   playlistId: string // Firestore playlist ID
   contributorId: string // Internal UUID (not Spotify ID)
   contributorName: string
-  tracks: ContributionTrack[]
-  createdAt: Timestamp
-  expiresAt: Timestamp // 4 weeks from creation
+  tracks: any[]
+  createdAt: admin.firestore.Timestamp
+  expiresAt: admin.firestore.Timestamp // 4 weeks from creation
 }
 
 /**
@@ -74,10 +75,10 @@ export interface SharingLink {
   ownerName: string
   linkSlug: string // Unique identifier for the link
   isActive: boolean
-  createdAt: Timestamp
-  updatedAt: Timestamp
+  createdAt: admin.firestore.Timestamp
+  updatedAt: admin.firestore.Timestamp
   usageCount: number
-  lastUsedAt?: Timestamp
+  lastUsedAt?: admin.firestore.Timestamp
 }
 
 /**

@@ -13,8 +13,7 @@ import { DashboardMetrics } from '@/components/dashboard/dashboard-metrics'
 import { ActivityTimeline } from '@/components/dashboard/activity-timeline'
 import { UserMenu } from '@/components/auth/user-menu'
 import { useTopSongs, useSMASPlaylist } from '@/hooks/use-spotify-queries'
-import { useFirebase } from '@/hooks/use-firebase'
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { Contribution } from '@/types/firebase'
 import type { Session } from 'next-auth'
 
@@ -27,8 +26,6 @@ interface DashboardContentProps {
  * @returns {JSX.Element} The dashboard content component.
  */
 export function DashboardContent({ session }: DashboardContentProps) {
-  const { addToast } = useToast()
-  const { getPlaylistContributions, getUserSharingLink } = useFirebase()
 
   // TanStack Query hooks
   const {
@@ -43,49 +40,47 @@ export function DashboardContent({ session }: DashboardContentProps) {
     error: playlistError
   } = useSMASPlaylist()
 
-  // Local state for contributions and share link usage
-  const [contributions, setContributions] = useState<Contribution[]>([])
-  const [shareLinkUsage, setShareLinkUsage] = useState(0)
-  const [isLoadingContributions, setIsLoadingContributions] = useState(false)
+  // Fetch contributions using TanStack Query
+  const {
+    data: contributionsData,
+    isLoading: isLoadingContributions,
+    error: contributionsError
+  } = useQuery({
+    queryKey: ['playlist-contributions', playlist?.firestoreId],
+    queryFn: async () => {
+      if (!playlist?.firestoreId) return { contributions: [] }
+      const res = await fetch(`/api/spotify/playlists/${playlist.firestoreId}/contributions`)
+      if (!res.ok) throw new Error('Failed to fetch contributions')
+      return res.json()
+    },
+    enabled: !!playlist?.firestoreId,
+  })
 
-  // Load contributions when playlist is available
-  useEffect(() => {
-    if (playlist?.firestoreId && session?.user?.id) {
-      setIsLoadingContributions(true)
-
-      const loadContributions = async () => {
-        try {
-          const contribRes = await getPlaylistContributions(playlist.firestoreId)
-          if (contribRes.success && Array.isArray(contribRes.data)) {
-            setContributions(contribRes.data)
-          }
-
-          // Load share link usage
-          const linkRes = await getUserSharingLink(session.user.id)
-          if (linkRes.success && linkRes.data) {
-            setShareLinkUsage(linkRes.data.usageCount || 0)
-          }
-        } catch (error) {
-          addToast({
-            type: 'error',
-            title: 'Error',
-            message: `Failed to load contribution data: ${error}`
-          })
-        } finally {
-          setIsLoadingContributions(false)
-        }
-      }
-
-      loadContributions()
-    }
-  }, [playlist?.firestoreId, session?.user?.id, getPlaylistContributions, getUserSharingLink, addToast])
+  // Fetch sharing link usage using TanStack Query
+  const {
+    data: sharingLinkData,
+    isLoading: isLoadingSharingLink,
+    error: sharingLinkError
+  } = useQuery({
+    queryKey: ['playlist-sharing-link', playlist?.firestoreId],
+    queryFn: async () => {
+      if (!playlist?.firestoreId) return { sharingLink: null }
+      const res = await fetch(`/api/spotify/playlists/${playlist.firestoreId}/sharing-link`)
+      if (!res.ok) throw new Error('Failed to fetch sharing link')
+      return res.json()
+    },
+    enabled: !!playlist?.firestoreId,
+  })
 
   const handleRetry = () => {
     window.location.reload()
   }
 
-  const isLoading = isLoadingTopSongs || isLoadingPlaylist || isLoadingContributions
-  const hasError = topSongsError || playlistError
+  const isLoading = isLoadingTopSongs || isLoadingPlaylist || isLoadingContributions || isLoadingSharingLink
+  const hasError = topSongsError || playlistError || contributionsError || sharingLinkError
+
+  const contributions = contributionsData?.contributions || []
+  const shareLinkUsage = sharingLinkData?.sharingLink?.usageCount || 0
 
   if (isLoading) {
     return (
@@ -134,7 +129,6 @@ export function DashboardContent({ session }: DashboardContentProps) {
         totalTracks={totalTracks}
         shareLinkUsage={shareLinkUsage}
       />
-
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">

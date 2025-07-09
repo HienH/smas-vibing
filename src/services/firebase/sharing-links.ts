@@ -4,19 +4,8 @@
  * Handles sharing link creation, retrieval, and usage tracking.
  */
 
-import {
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  serverTimestamp,
-  Timestamp
-} from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import admin from 'firebase-admin'
+import { adminDb as db } from '@/lib/firebaseAdmin'
 import {
   SharingLink,
   CreateSharingLinkData,
@@ -32,8 +21,8 @@ import { updatePlaylistSharingLinkId } from './playlists'
  */
 export async function createSharingLink(linkData: CreateSharingLinkData): Promise<DatabaseResult<SharingLink>> {
   try {
-    const now = Timestamp.now()
-    const linkRef = doc(collection(db, COLLECTIONS.SHARING_LINKS))
+    const now = admin.firestore.Timestamp.now()
+    const linkRef = db.collection(COLLECTIONS.SHARING_LINKS).doc()
 
     const sharingLink: SharingLink = {
       id: linkRef.id,
@@ -47,7 +36,7 @@ export async function createSharingLink(linkData: CreateSharingLinkData): Promis
       usageCount: 0,
     }
 
-    await setDoc(linkRef, sharingLink)
+    await linkRef.set(sharingLink)
 
     await updatePlaylistSharingLinkId(linkData.playlistId, linkRef.id)
 
@@ -70,10 +59,10 @@ export async function createSharingLink(linkData: CreateSharingLinkData): Promis
  */
 export async function getSharingLinkById(linkId: string): Promise<DatabaseResult<SharingLink>> {
   try {
-    const linkRef = doc(db, COLLECTIONS.SHARING_LINKS, linkId)
-    const linkSnap = await getDoc(linkRef)
+    const linkRef = db.collection(COLLECTIONS.SHARING_LINKS).doc(linkId)
+    const linkSnap = await linkRef.get()
 
-    if (!linkSnap.exists()) {
+    if (!linkSnap.exists) {
       return {
         success: false,
         error: 'Sharing link not found',
@@ -99,9 +88,9 @@ export async function getSharingLinkById(linkId: string): Promise<DatabaseResult
  */
 export async function getSharingLinkBySlug(linkSlug: string): Promise<DatabaseResult<SharingLink>> {
   try {
-    const linksRef = collection(db, COLLECTIONS.SHARING_LINKS)
-    const q = query(linksRef, where('linkSlug', '==', linkSlug), where('isActive', '==', true))
-    const querySnapshot = await getDocs(q)
+    const linksRef = db.collection(COLLECTIONS.SHARING_LINKS)
+    const q = linksRef.where('linkSlug', '==', linkSlug).where('isActive', '==', true)
+    const querySnapshot = await q.get()
 
     if (querySnapshot.empty) {
       return {
@@ -130,9 +119,9 @@ export async function getSharingLinkBySlug(linkSlug: string): Promise<DatabaseRe
  */
 export async function getSharingLinksByPlaylist(playlistId: string): Promise<DatabaseResult<SharingLink[]>> {
   try {
-    const linksRef = collection(db, COLLECTIONS.SHARING_LINKS)
-    const q = query(linksRef, where('playlistId', '==', playlistId), where('isActive', '==', true))
-    const querySnapshot = await getDocs(q)
+    const linksRef = db.collection(COLLECTIONS.SHARING_LINKS)
+    const q = linksRef.where('playlistId', '==', playlistId).where('isActive', '==', true)
+    const querySnapshot = await q.get()
 
     const sharingLinks: SharingLink[] = querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -158,18 +147,17 @@ export async function getSharingLinksByPlaylist(playlistId: string): Promise<Dat
  */
 export async function getSharingLinkByOwner(spotifyUserId: string): Promise<DatabaseResult<SharingLink>> {
   try {
-    const linksRef = collection(db, COLLECTIONS.SHARING_LINKS)
-    const q = query(linksRef, where('spotifyUserId', '==', spotifyUserId), where('isActive', '==', true))
-    const querySnapshot = await getDocs(q)
+    const linksRef = db.collection(COLLECTIONS.SHARING_LINKS)
+    const querySnap = await linksRef.where('spotifyUserId', '==', spotifyUserId).where('isActive', '==', true).get()
 
-    if (querySnapshot.empty) {
+    if (querySnap.empty) {
       return {
         success: false,
         error: 'Sharing link not found',
       }
     }
 
-    const linkDoc = querySnapshot.docs[0]
+    const linkDoc = querySnap.docs[0]
     return {
       success: true,
       data: { id: linkDoc.id, ...linkDoc.data() } as SharingLink,
@@ -193,11 +181,11 @@ export async function updateSharingLink(
   updateData: Partial<Pick<SharingLink, 'ownerName' | 'isActive' | 'usageCount' | 'lastUsedAt' | 'playlistId'>>
 ): Promise<DatabaseResult<void>> {
   try {
-    const linkRef = doc(db, COLLECTIONS.SHARING_LINKS, linkId)
+    const linkRef = db.collection(COLLECTIONS.SHARING_LINKS).doc(linkId)
 
-    await updateDoc(linkRef, {
+    await linkRef.update({
       ...updateData,
-      updatedAt: serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     })
 
     return {
@@ -218,10 +206,10 @@ export async function updateSharingLink(
  */
 export async function incrementSharingLinkUsage(linkId: string): Promise<DatabaseResult<void>> {
   try {
-    const linkRef = doc(db, COLLECTIONS.SHARING_LINKS, linkId)
-    const linkSnap = await getDoc(linkRef)
+    const linkRef = db.collection(COLLECTIONS.SHARING_LINKS).doc(linkId)
+    const linkSnap = await linkRef.get()
 
-    if (!linkSnap.exists()) {
+    if (!linkSnap.exists) {
       return {
         success: false,
         error: 'Sharing link not found',
@@ -229,12 +217,12 @@ export async function incrementSharingLinkUsage(linkId: string): Promise<Databas
     }
 
     const currentData = linkSnap.data() as SharingLink
-    const now = Timestamp.now()
+    const now = admin.firestore.Timestamp.now()
 
-    await updateDoc(linkRef, {
+    await linkRef.update({
       usageCount: currentData.usageCount + 1,
       lastUsedAt: now,
-      updatedAt: serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     })
 
     return {
@@ -264,13 +252,12 @@ export async function deactivateSharingLink(linkId: string): Promise<DatabaseRes
  */
 export async function isLinkSlugAvailable(linkSlug: string): Promise<DatabaseResult<boolean>> {
   try {
-    const linksRef = collection(db, COLLECTIONS.SHARING_LINKS)
-    const q = query(linksRef, where('linkSlug', '==', linkSlug))
-    const querySnapshot = await getDocs(q)
+    const linksRef = db.collection(COLLECTIONS.SHARING_LINKS)
+    const querySnap = await linksRef.where('linkSlug', '==', linkSlug).get()
 
     return {
       success: true,
-      data: querySnapshot.empty,
+      data: querySnap.empty,
     }
   } catch (error) {
     return {
