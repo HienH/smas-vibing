@@ -5,7 +5,6 @@
  */
 import { validateSession } from '@/lib/auth'
 import { LoginButton } from '@/components/auth/login-button'
-import { redirect } from 'next/navigation'
 
 /**
  * @description Renders the landing page with authentication-aware login button.
@@ -19,8 +18,8 @@ export default async function HomePage() {
     <div className="flex text-center justify-center mt-12 bg-green-50">
       <div className="max-w-2xl w-full text-center">
         <p className="text-lg text-gray-700 mb-8">
-          &quot;Send Me a Song&quot; lets you discover new music through your friends&apos; favorite tracks.
-          Simply share a link with your friends and we'll create a personalized SMAS playlist on Spotify with their current most-played songs.
+          Send Me a Song lets you discover new music through your friends&apos; favorite tracks.
+          Simply share a link with your friends and we&apos;ll create a personalized SMAS playlist on Spotify with their current most-played songs.
         </p>
         <LoginButton hasSession={!!session} />
       </div>
