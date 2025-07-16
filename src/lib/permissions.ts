@@ -62,8 +62,6 @@ export function handlePermissionError(
     permissionError: PermissionError,
     onReconnect: () => void
 ): void {
-    console.error('Permission error:', permissionError)
-
     switch (permissionError.type) {
         case 'token_expired':
         case 'permission_revoked':

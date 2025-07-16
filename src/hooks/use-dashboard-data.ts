@@ -3,7 +3,6 @@
  */
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { usePlaylistStore } from '@/stores/playlist-store'
-import { useFirebase } from '@/hooks/use-firebase'
 import { Contribution } from '@/types/firebase'
 
 export const useDashboardData = (userId?: string) => {
@@ -13,7 +12,6 @@ export const useDashboardData = (userId?: string) => {
   const [contributions, setContributions] = useState<Contribution[]>([])
   const [shareLinkUsage, setShareLinkUsage] = useState(0)
   const hasInitialized = useRef(false)
-  const { getPlaylistContributions, getUserSharingLink } = useFirebase()
 
   const handleRetry = useCallback(() => {
     hasInitialized.current = false
@@ -50,21 +48,29 @@ export const useDashboardData = (userId?: string) => {
           if (isMounted && playlist) {
             setPlaylist(playlist)
 
-            // Fetch contributions for this playlist
-            const contribRes = await getPlaylistContributions(playlist.firestoreId || '')
-
-            if (contribRes.success && Array.isArray(contribRes.data)) {
-              setContributions(contribRes.data)
+            // Fetch contributions for this playlist using API route
+            if (playlist.firestoreId) {
+              const contribResponse = await fetch(`/api/spotify/playlists/${playlist.firestoreId}/contributions`)
+              if (contribResponse.ok) {
+                const contribData = await contribResponse.json()
+                if (isMounted && Array.isArray(contribData.contributions)) {
+                  setContributions(contribData.contributions)
+                }
+              }
             }
 
-            // Fetch share link usage
-            const linkRes = await getUserSharingLink(userId)
-            if (linkRes.success && linkRes.data) {
-              setShareLinkUsage(linkRes.data.usageCount || 0)
+            // Fetch share link usage using API route
+            if (playlist.firestoreId) {
+              const linkResponse = await fetch(`/api/spotify/playlists/${playlist.firestoreId}/sharing-link`)
+              if (linkResponse.ok) {
+                const linkData = await linkResponse.json()
+                if (isMounted && linkData.sharingLink) {
+                  setShareLinkUsage(linkData.sharingLink.usageCount || 0)
+                }
+              }
             }
           }
         } catch (error) {
-          console.log(error)
           if (isMounted) setHasError(true)
         } finally {
           if (isMounted) {
@@ -82,7 +88,7 @@ export const useDashboardData = (userId?: string) => {
     return () => {
       isMounted = false
     }
-  }, [userId, setTopSongs, setPlaylist, setLoading, setError, getPlaylistContributions, getUserSharingLink])
+  }, [userId, setTopSongs, setPlaylist, setLoading, setError])
 
   useEffect(() => {
     if (!userId) {

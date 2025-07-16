@@ -282,7 +282,6 @@ export async function getUserBySpotifyId(spotifyId: string): Promise<DatabaseRes
  */
 export async function getUserByNextAuthId(nextAuthUserId: string): Promise<DatabaseResult<UserProfile>> {
   try {
-
     const accountsRef = db.collection('accounts')
     const querySnap = await accountsRef.where('userId', '==', nextAuthUserId).get()
 
@@ -317,20 +316,20 @@ export async function getUserByNextAuthId(nextAuthUserId: string): Promise<Datab
       }
     }
 
+
+
     // Fallback: try to find in users collection (basic user data)
     const userResult = await getUserById(nextAuthUserId)
     if (userResult.success && userResult.data) {
-      console.log('🔍 getUserByNextAuthId: Found user in users collection (but no Spotify data)')
       return userResult
     }
 
-    console.log('🔍 getUserByNextAuthId: User not found or missing Spotify data')
+    ///THIS IS WHERE IT IS WRONG 
     return {
       success: false,
       error: 'User not found or missing Spotify data',
     }
   } catch (error) {
-    console.error('🔍 getUserByNextAuthId: Error:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get user by NextAuth ID',

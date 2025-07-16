@@ -30,8 +30,6 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'userId parameter required' }, { status: 400 })
         }
 
-        console.log('🔍 Debug: Looking for user:', userId)
-
         // Check users collection
         const usersRef = collection(db, 'users')
         const usersQuery = query(usersRef, where('__name__', '==', userId))
@@ -65,7 +63,6 @@ export async function GET(request: NextRequest) {
             }
         })
     } catch (error) {
-        console.error('🔍 Debug: Error:', error)
         return NextResponse.json(
             { error: error instanceof Error ? error.message : 'Unknown error' },
             { status: 500 }

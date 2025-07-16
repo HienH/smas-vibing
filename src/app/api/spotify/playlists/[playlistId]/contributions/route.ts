@@ -3,6 +3,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getContributionsByPlaylist } from '@/services/firebase/contributions'
+import { Contribution } from '@/types'
 
 export async function GET(
     req: NextRequest,
@@ -16,5 +17,20 @@ export async function GET(
     if (!result.success) {
         return NextResponse.json({ error: result.error }, { status: 500 })
     }
-    return NextResponse.json({ contributions: result.data })
+
+    // Serialize timestamps
+    const serializeContribution = (contribution: Contribution) => ({
+        ...contribution,
+        createdAt: contribution.createdAt?.toDate
+            ? contribution.createdAt.toDate().toISOString()
+            : contribution.createdAt,
+        expiresAt: contribution.expiresAt?.toDate
+            ? contribution.expiresAt.toDate().toISOString()
+            : contribution.expiresAt,
+    });
+
+
+    const serialized = result.data?.map(serializeContribution);
+
+    return NextResponse.json({ contributions: serialized })
 } 

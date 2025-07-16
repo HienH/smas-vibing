@@ -9,6 +9,7 @@ import { useMemo } from 'react'
 import { Card, CardHeader, CardContent } from '@/components/ui'
 import { type Contribution } from '@/types/firebase'
 import { format } from 'date-fns'
+import { toDate } from '@/lib/utils'
 
 interface DashboardMetricsProps {
   contributions: Contribution[]
@@ -31,8 +32,10 @@ export function DashboardMetrics({ contributions, totalTracks, shareLinkUsage = 
   // Get most recent contribution
   const mostRecentContribution = useMemo(() => {
     if (contributions.length === 0) return null
-    return contributions.reduce((latest, current) => 
-      current.createdAt.toMillis() > latest.createdAt.toMillis() ? current : latest
+    return contributions.reduce((latest, current) =>
+      toDate(current.createdAt).getTime() > toDate(latest.createdAt).getTime()
+
+        ? current : latest
     )
   }, [contributions])
 
@@ -79,7 +82,8 @@ export function DashboardMetrics({ contributions, totalTracks, shareLinkUsage = 
           {mostRecentContribution ? (
             <>
               <div className="text-2xl font-bold text-green-700">
-                {format(mostRecentContribution.createdAt.toDate(), 'MMM d')}
+                {format(toDate(mostRecentContribution.createdAt), 'MMM d')}
+
               </div>
               <p className="text-xs text-gray-500 mt-1">
                 by {mostRecentContribution.contributorName}

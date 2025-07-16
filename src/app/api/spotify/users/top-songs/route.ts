@@ -37,8 +37,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(songs)
   } catch (error) {
-    console.error('Error fetching top songs:', error)
-
     if (error instanceof SpotifyAPIError && error.code === 'TOKEN_EXPIRED') {
       return NextResponse.json(
         { error: 'Token expired, please refresh the page' },

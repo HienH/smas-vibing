@@ -51,14 +51,10 @@ export async function spotifyRequest(
       throw new Error(`Failed to upload playlist cover image. Status: ${response.status}`)
     }
 
-    // Debug: Log the raw response text
-    const text = await response.text()
-
     let data
     try {
-      data = JSON.parse(text)
+      data = JSON.parse(await response.text())
     } catch (e) {
-      console.error('Failed to parse Spotify response as JSON:', text)
       throw e
     }
 
@@ -154,6 +150,9 @@ export async function addTracksToPlaylist(
   playlistId: string,
   trackUris: string[]
 ): Promise<any> {
+
+  console.log(trackUris)
+
   return spotifyRequest(
     accessToken,
     `/playlists/${playlistId}/tracks`,

@@ -4,7 +4,7 @@
  * Defines TypeScript interfaces for users, playlists, contributions, and sharing links.
  */
 
-import { Timestamp } from 'firebase/firestore'
+
 import admin from 'firebase-admin'
 
 /**
@@ -48,21 +48,9 @@ export interface Contribution {
   playlistId: string // Firestore playlist ID
   contributorId: string // Internal UUID (not Spotify ID)
   contributorName: string
-  tracks: any[]
-  createdAt: admin.firestore.Timestamp
-  expiresAt: admin.firestore.Timestamp // 4 weeks from creation
-}
-
-/**
- * @description Individual track within a contribution.
- */
-export interface ContributionTrack {
-  spotifyTrackId: string
-  name: string
-  artist: string
-  album?: string
-  imageUrl?: string
-  duration?: number
+  spotifyTrackUris: string[]
+  createdAt: admin.firestore.Timestamp | string
+  expiresAt: admin.firestore.Timestamp
 }
 
 /**
@@ -87,7 +75,7 @@ export interface SharingLink {
 export interface UserTopSongs {
   userId: string // Spotify user ID
   songs: TopSong[]
-  lastFetched: Timestamp
+  lastFetched: admin.firestore.Timestamp
 }
 
 /**
@@ -135,7 +123,7 @@ export interface CreateUserData {
   imageUrl?: string
   spotifyAccessToken?: string
   spotifyRefreshToken?: string
-  spotifyTokenExpiresAt?: Timestamp
+  spotifyTokenExpiresAt?: admin.firestore.Timestamp
 }
 
 /**
@@ -156,7 +144,7 @@ export interface CreateContributionData {
   playlistId: string
   contributorId: string // Internal UUID (not Spotify ID)
   contributorName: string
-  tracks: ContributionTrack[]
+  spotifyTrackUris: string[]
 }
 
 /**

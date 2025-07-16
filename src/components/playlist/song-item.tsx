@@ -59,14 +59,9 @@ export function SongItem({ song }: SongItemProps) {
       </div>
 
       {song.contributorName && (
-        <div className="flex-shrink-0">
-          <span
-            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
-            aria-label={`Contributed by ${song.contributorName}`}
-          >
-            {song.contributorName}
-          </span>
-        </div>
+        <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+          {song.contributorName}
+        </span>
       )}
     </div>
   )

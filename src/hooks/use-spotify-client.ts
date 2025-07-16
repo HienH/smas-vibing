@@ -42,7 +42,6 @@ export function useSpotifyClient() {
       const songs: Song[] = await response.json()
       setTopSongs(songs)
     } catch (error) {
-      console.error('Error fetching top songs:', error)
       setError(true)
     } finally {
       setLoading(false)
@@ -79,7 +78,6 @@ export function useSpotifyClient() {
       const playlist: Playlist = await response.json()
       setPlaylist(playlist)
     } catch (error) {
-      console.error('Error creating playlist:', error)
       setError(true)
     } finally {
       setLoading(false)

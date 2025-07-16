@@ -1,0 +1,41 @@
+{
+    "url": "https://accounts.spotify.com/authorize?client_id=167e0bdc51a241c9a1c781b0f8c3df7f&scope=user-top-read%20playlist-modify-public%20playlist-read-private%20user-read-email%20user-library-read%20ugc-image-upload&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fauth%2Fcallback%2Fspotify&state=rBg5lVZX_-WFsWL5OWFaoKdFDaNujpSWPNZo2KQTgDU",
+    "cookies": [
+        {
+            "name": "next-auth.state",
+            "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..m7-spewkF3g1Krqs.0_s5Fy9bEDTuLj0aoq_86t3xSGTdJFQJDdQV2OEFEMNTiHhJXQzTDFwY-ATamE8ZNlFcf4PfUqE5clc3O9Ew9ytNVO1KswdN80504O5yAQou-2TeVySOoJawZ5kYe3ZB48iITNPx8PPHqeU8-ZTS0kdDv3xcrc44GyAQIwRZf4l-ZMp0SDM.63Bq8ZhXLsrby1cT6Q0GlA",
+            "options": {}
+        }
+    ],
+    "provider": {
+        "id": "spotify",
+        "name": "Spotify",
+        "type": "oauth",
+        "authorization": {
+            "url": "https://accounts.spotify.com/authorize",
+            "params": {}
+        },
+        "token": {
+            "url": "https://accounts.spotify.com/api/token",
+            "params": {}
+        },
+        "userinfo": {
+            "url": "https://api.spotify.com/v1/me",
+            "params": {}
+        },
+        "profile": {},
+        "style": {
+            "logo": "/spotify.svg",
+            "text": "#fff",
+            "bg": "#000"
+        },
+        "idToken": false,
+        "checks": [
+            "state"
+        ],
+        "clientId": "167e0bdc51a241c9a1c781b0f8c3df7f",
+        "clientSecret": "ab81f810749749098e511a54f068b155",
+        "signinUrl": "http://localhost:3000/api/auth/signin/spotify",
+        "callbackUrl": "http://localhost:3000/api/auth/callback/spotify"
+    }
+}

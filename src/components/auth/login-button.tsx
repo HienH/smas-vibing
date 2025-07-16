@@ -34,7 +34,6 @@ export const LoginButton = ({ hasSession = false }: LoginButtonProps) => {
         await signIn('spotify', { callbackUrl: '/dashboard' })
       }
     } catch (error) {
-      console.error('Login error:', error)
       setHasError(true)
       setIsLoading(false)
     }

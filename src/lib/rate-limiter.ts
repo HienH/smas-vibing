@@ -71,7 +71,6 @@ export class RateLimiter {
         // If we've hit the rate limit, wait until reset
         if (this.state.resetTime > now) {
             const waitTime = this.state.resetTime - now + 1000 // Add 1 second buffer
-            console.log(`Rate limit hit, waiting ${waitTime}ms`)
             await this.delay(waitTime)
             this.state.requestCount = 0
         }
@@ -121,11 +120,8 @@ export class RateLimiter {
 
                 // Check if it's a rate limit error
                 if (this.isRateLimitError(error)) {
-                    console.log(`Rate limit error on attempt ${attempt + 1}`)
-
                     if (attempt < this.config.maxRetries) {
                         const delay = this.calculateBackoffDelay(attempt)
-                        console.log(`Retrying in ${delay}ms`)
                         await this.delay(delay)
                         continue
                     }

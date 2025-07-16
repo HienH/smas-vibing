@@ -29,7 +29,7 @@ export async function createContribution(contributionData: CreateContributionDat
       playlistId: contributionData.playlistId,
       contributorId: contributionData.contributorId,
       contributorName: contributionData.contributorName,
-      tracks: contributionData.tracks,
+      spotifyTrackUris: contributionData.spotifyTrackUris,
       createdAt: now,
       expiresAt,
     }
@@ -41,7 +41,6 @@ export async function createContribution(contributionData: CreateContributionDat
       data: contribution,
     }
   } catch (error) {
-    console.error('❌ Error creating contribution:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create contribution',
@@ -227,9 +226,9 @@ export async function getAllContributedTracks(playlistId: string): Promise<Datab
     const allTracks: Array<{ track: unknown, contributor: string }> = []
 
     contributions.data.forEach(contribution => {
-      contribution.tracks.forEach(track => {
+      contribution.spotifyTrackUris.forEach(uri => {
         allTracks.push({
-          track,
+          track: uri,
           contributor: contribution.contributorName,
         })
       })

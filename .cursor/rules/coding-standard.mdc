@@ -25,3 +25,5 @@ Write concise, technical code.
 Use functional and declarative programming patterns; avoid classes.
 Prefer iteration and modularization over code duplication (DRY methods).
 Throw errors instead of adding fallback values
+
+- Remove any file that is no longer imported, referenced, or used anywhere in the codebase. Always confirm with a project-wide search before deleting. This includes old hooks, services, test mocks, debug logs, build artifacts, and empty directories. Do not keep dead code or placeholder files unless required (e.g., .gitkeep).

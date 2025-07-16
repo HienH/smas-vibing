@@ -9,6 +9,7 @@ import { useMemo } from 'react'
 import { Card, CardHeader, CardContent } from '@/components/ui'
 import { type Contribution } from '@/types/firebase'
 import { format } from 'date-fns'
+import { toDate } from '@/lib/utils'
 
 interface ActivityTimelineProps {
   contributions: Contribution[]
@@ -23,7 +24,7 @@ export function ActivityTimeline({ contributions }: ActivityTimelineProps) {
   // Get recent contributions (last 7)
   const recentContributions = useMemo(() => {
     return contributions
-      .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())
+      .sort((a, b) => toDate(b.createdAt).getTime() - toDate(a.createdAt).getTime())
       .slice(0, 7)
   }, [contributions])
 
@@ -62,18 +63,12 @@ export function ActivityTimeline({ contributions }: ActivityTimelineProps) {
                     {contribution.contributorName}
                   </p>
                   <span className="text-xs text-gray-500">
-                    {format(contribution.createdAt.toDate(), 'MMM d, h:mm a')}
+                    {format(toDate(contribution.createdAt), 'MMM d')}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600">
-                  Added {contribution.tracks.length} track{contribution.tracks.length !== 1 ? 's' : ''}
+                  Added {contribution.spotifyTrackUris.length} track{contribution.spotifyTrackUris.length !== 1 ? 's' : ''}
                 </p>
-                {contribution.tracks.length > 0 && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    &quot;{contribution.tracks[0].name}&quot; by {contribution.tracks[0].artist}
-                    {contribution.tracks.length > 1 && ` +${contribution.tracks.length - 1} more`}
-                  </p>
-                )}
               </div>
             </div>
           ))}

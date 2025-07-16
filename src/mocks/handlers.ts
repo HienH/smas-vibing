@@ -7,6 +7,7 @@
 import { http, HttpResponse } from 'msw'
 import { mockSpotifyData } from './spotify-api'
 import { mockAuthData } from './next-auth'
+import spotifyAuthCallback from './spotify-auth-callback.json'
 
 export const handlers = [
   // Spotify API endpoints
@@ -50,5 +51,14 @@ export const handlers = [
 
   http.post('/api/spotify/playlists', () => {
     return HttpResponse.json(mockSpotifyData.smasPlaylist)
+  }),
+
+  // Mock Spotify Auth0 callback response
+  http.get('https://accounts.spotify.com/authorize', () => {
+    if (process.env.NODE_ENV !== 'production') {
+      return HttpResponse.json(spotifyAuthCallback)
+    }
+    // Optionally, fall through or return a default error in prod
+    return HttpResponse.json({ error: 'Not available in production' }, { status: 404 })
   }),
 ] 

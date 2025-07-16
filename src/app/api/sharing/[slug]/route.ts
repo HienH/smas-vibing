@@ -32,7 +32,6 @@ export async function GET(
             createdAt: linkResult.data.createdAt,
         })
     } catch (error) {
-        console.error('Error fetching sharing link:', error)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 } 

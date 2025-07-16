@@ -111,11 +111,11 @@ export function useContributeSongs() {
     const queryClient = useQueryClient()
 
     return useMutation({
-        mutationFn: async ({ playlistId, trackUris }: { playlistId: string; trackUris: string[] }) => {
+        mutationFn: async ({ playlistId, trackUris, linkSlug }: { playlistId: string; trackUris: string[]; linkSlug?: string }) => {
             const response = await fetch('/api/spotify/contribute', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ playlistId, trackUris })
+                body: JSON.stringify({ playlistId, trackUris, linkSlug })
             })
 
             if (!response.ok) {
@@ -131,7 +131,6 @@ export function useContributeSongs() {
         },
         onError: (error) => {
             // Error handling is done in the component for more specific messaging
-            console.error('Contribution failed:', error)
         },
     })
 }

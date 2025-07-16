@@ -40,6 +40,10 @@ export function DashboardContent({ session }: DashboardContentProps) {
     error: playlistError
   } = useSMASPlaylist()
 
+
+  console.log(playlist)
+  console.log("playlisttttt")
+
   // Fetch contributions using TanStack Query
   const {
     data: contributionsData,
@@ -107,7 +111,7 @@ export function DashboardContent({ session }: DashboardContentProps) {
   }
 
   // Calculate total tracks from contributions
-  const totalTracks = contributions.reduce((sum: number, contribution: Contribution) => sum + contribution.tracks.length, 0)
+  const totalTracks = contributions.reduce((sum: number, contribution: Contribution) => sum + contribution.spotifyTrackUris.length, 0)
 
   return (
     <div className="container mx-auto px-4 py-8">

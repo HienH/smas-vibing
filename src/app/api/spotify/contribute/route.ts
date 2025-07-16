@@ -1,77 +1,100 @@
 /**
- * @fileoverview API route to add tracks to a playlist using the owner's access token.
+ * @fileoverview API route for contributing songs to a playlist.
  *
- * Ensures only the playlist owner can add tracks to their playlist, even when a contributor submits songs.
+ * Handles song contribution with cooldown checking and Firestore tracking.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getPlaylistById } from '@/services/firebase/playlists'
-import { getUserBySpotifyUserId, updateUserTokens } from '@/services/firebase/users'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/app/(auth)/api/auth/[...nextauth]/route'
 import { addTracksToPlaylist } from '@/lib/spotify'
+import { createContribution, checkUserContribution } from '@/services/firebase/contributions'
+import { getUserByNextAuthId } from '@/services/firebase/users'
+import { getSharingLinkBySlug, updateSharingLink } from '@/services/firebase/sharing-links'
+import admin from 'firebase-admin'
+import { getPlaylistById } from '@/services/firebase'
 
-const SPOTIFY_TOKEN_ENDPOINT = 'https://accounts.spotify.com/api/token'
-
-async function refreshSpotifyAccessToken(refreshToken: string, userId: string) {
-  const basicAuth = Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString('base64')
-  const res = await fetch(SPOTIFY_TOKEN_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': `Basic ${basicAuth}`,
-    },
-    body: new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-    }),
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error_description || 'Failed to refresh token')
-  // Update tokens in Firestore
-  await updateUserTokens(userId, data.access_token, data.refresh_token || refreshToken, data.expires_in)
-  return data.access_token
-}
-
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const { playlistId, trackUris } = await req.json()
-    if (!playlistId || !Array.isArray(trackUris) || trackUris.length === 0) {
-      return NextResponse.json({ error: 'Missing playlistId or trackUris' }, { status: 400 })
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    // 1. Get playlist and owner
-    const playlistRes = await getPlaylistById(playlistId)
-    if (!playlistRes.success || !playlistRes.data) {
-      return NextResponse.json({ error: 'Playlist not found' }, { status: 404 })
-    }
-    const playlist = playlistRes.data
-    const spotifyUserId = playlist.spotifyUserId
 
-    // 2. Get owner's access token
-    const ownerRes = await getUserBySpotifyUserId(spotifyUserId)
+    const { playlistId, trackUris, linkSlug } = await request.json()
 
-    if (!ownerRes.success || !ownerRes.data || !ownerRes.data.spotifyAccessToken) {
-      return NextResponse.json({ error: 'Owner access token not found' }, { status: 401 })
+    if (!playlistId || !trackUris || !Array.isArray(trackUris)) {
+      return NextResponse.json({ error: 'Missing required data' }, { status: 400 })
     }
-    let ownerAccessToken = ownerRes.data.spotifyAccessToken
-    // 3. Check if token is expired
-    const now = Date.now()
-    const expiresAt = ownerRes.data.spotifyTokenExpiresAt?.toMillis?.() || 0
-    if (expiresAt && expiresAt < now + 60000) { // refresh if expiring in <1min
-      if (!ownerRes.data.spotifyRefreshToken) {
-        return NextResponse.json({ error: 'Owner refresh token not found' }, { status: 401 })
-      }
-      try {
-        ownerAccessToken = await refreshSpotifyAccessToken(ownerRes.data.spotifyRefreshToken, spotifyUserId)
-      } catch (err: any) {
-        return NextResponse.json({ error: err.message || 'Failed to refresh token' }, { status: 401 })
-      }
+
+    // // Get user profile
+    // const userResult = await getUserByNextAuthId(session.user.id)
+    // if (!userResult.success || !userResult.data) {
+    //   return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    // }
+
+    // Check cooldown
+    const cooldownResult = await checkUserContribution(playlistId, session.user.id)
+    if (!cooldownResult.success) {
+      return NextResponse.json({ error: 'Failed to check cooldown' }, { status: 500 })
     }
-    // 4. Add tracks to playlist
+
+    if (cooldownResult.data?.hasContributed) {
+      return NextResponse.json({
+        error: 'Cooldown active',
+        cooldown: cooldownResult.data
+      }, { status: 429 })
+    }
+
+    // Get access token from session
+    const accessToken = (session as any).accessToken
+    if (!accessToken) {
+      return NextResponse.json({ error: 'No access token available' }, { status: 401 })
+    }
+
+    // Add tracks to Spotify playlist
     try {
-      await addTracksToPlaylist(ownerAccessToken, playlist.spotifyPlaylistId, trackUris)
-      return NextResponse.json({ success: true })
-    } catch (err: any) {
-      return NextResponse.json({ error: err.message || 'Failed to add tracks' }, { status: 500 })
+      console.log("adding tracks to spotify playlist")
+      const playlistDoc = await getPlaylistById(playlistId);
+      const spotifyPlaylistId = playlistDoc.data?.spotifyPlaylistId;
+      if (!spotifyPlaylistId) {
+        return NextResponse.json({ error: 'No spotify playlist found' }, { status: 401 })
+      }
+      await addTracksToPlaylist(accessToken, spotifyPlaylistId, trackUris)
+    } catch (error) {
+      console.error('Failed to add tracks to playlist:', error)
+      return NextResponse.json({ error: 'Failed to add tracks to playlist' }, { status: 500 })
     }
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Unknown error' }, { status: 500 })
+
+    // Record contribution in Firestore
+    const contributionResult = await createContribution({
+      playlistId,
+      contributorId: session.user.id,
+      contributorName: session.user.name || '',
+      spotifyTrackUris: trackUris,
+    })
+
+    if (!contributionResult.success) {
+      return NextResponse.json({ error: 'Failed to record contribution' }, { status: 500 })
+    }
+
+    // Track link usage if linkSlug provided
+    if (linkSlug) {
+      const linkResult = await getSharingLinkBySlug(linkSlug)
+      if (linkResult.success && linkResult.data) {
+        await updateSharingLink(linkResult.data.id, {
+          usageCount: (linkResult.data.usageCount || 0) + 1,
+          lastUsedAt: admin.firestore.Timestamp.now(),
+        })
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Songs added successfully'
+    })
+
+  } catch (error) {
+    console.error('Contribution error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 

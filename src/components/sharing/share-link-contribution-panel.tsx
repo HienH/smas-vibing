@@ -9,7 +9,6 @@ import React, { useEffect, useState } from 'react'
 import { Card, CardHeader, CardContent, Button, LoadingState, useToast, LoadingButton } from '@/components/ui'
 import { SongItem } from '@/components/playlist/song-item'
 import { useTopSongs, useContributeSongs, useSharingLink } from '@/hooks/use-spotify-queries'
-import { useFirebase } from '@/hooks/use-firebase'
 import type { Song } from '@/stores/playlist-store'
 
 interface ShareLinkContributionPanelProps {
@@ -26,7 +25,6 @@ export function ShareLinkContributionPanel({
   session,
 }: ShareLinkContributionPanelProps) {
   const { addToast } = useToast()
-  const { checkContribution, addContribution: addContributionToFirebase, trackLinkUsage } = useFirebase()
 
   // TanStack Query hooks
   const { data: topSongs, isLoading: isLoadingTopSongs } = useTopSongs()
@@ -45,12 +43,6 @@ export function ShareLinkContributionPanel({
     cooldownUntil: undefined as string | undefined,
   })
 
-  // Helper: Format date for cooldown
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr)
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-  }
-
   // Update state when sharing link data changes
   useEffect(() => {
     if (sharingLink && sharingLink.isActive) {
@@ -59,7 +51,6 @@ export function ShareLinkContributionPanel({
         isValid: true,
         ownerName: sharingLink.ownerName
       }))
-      trackLinkUsage(sharingLink.id)
     } else if (sharingLink && !sharingLink.isActive) {
       setState(s => ({
         ...s,
@@ -67,7 +58,7 @@ export function ShareLinkContributionPanel({
         error: 'Invalid or expired sharing link.'
       }))
     }
-  }, [sharingLink, trackLinkUsage])
+  }, [sharingLink])
 
   // Handle link error
   useEffect(() => {
@@ -99,25 +90,6 @@ export function ShareLinkContributionPanel({
     }
 
     try {
-      // Check cooldown
-      const cooldownResult = await checkContribution(sharingLink.playlistId, session.user.id)
-      if (!cooldownResult.success) {
-        throw new Error('Failed to check contribution')
-      }
-
-      if (cooldownResult.data?.hasContributed && cooldownResult.data.contribution) {
-        // Calculate days left
-        const expiresAt = cooldownResult.data.contribution.expiresAt.toDate()
-        const now = new Date()
-        const days = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-        setState(s => ({
-          ...s,
-          cooldownDays: days,
-          cooldownUntil: formatDate(expiresAt.toISOString())
-        }))
-        return
-      }
-
       if (!topSongs.length) {
         setState(s => ({ ...s, noTopTracks: true }))
         return
@@ -128,35 +100,23 @@ export function ShareLinkContributionPanel({
 
       // Contribute songs using TanStack Query mutation
       contributeSongs(
-        { playlistId: sharingLink.playlistId, trackUris },
         {
-          onSuccess: async () => {
-            // Record contribution in Firestore
-            const contributionResult = await addContributionToFirebase({
-              playlistId: sharingLink.playlistId,
-              contributorId: session.user.id,
-              contributorName: session.user.name || '',
-              tracks: topSongs.map(song => ({
-                spotifyTrackId: song.id,
-                name: song.name,
-                artist: song.artist,
-                album: song.album,
-                imageUrl: song.imageUrl,
-              })),
+          playlistId: sharingLink.playlistId,
+          trackUris,
+          linkSlug: linkSlug
+        },
+        {
+          onSuccess: () => {
+            setState(s => ({
+              ...s,
+              isSuccess: true,
+              successTracks: topSongs
+            }))
+            addToast({
+              type: 'success',
+              title: 'Songs Added!',
+              message: `Your top songs have been added to ${state.ownerName}&apos;s playlist.`
             })
-
-            if (contributionResult.success) {
-              setState(s => ({
-                ...s,
-                isSuccess: true,
-                successTracks: topSongs
-              }))
-              addToast({
-                type: 'success',
-                title: 'Songs Added!',
-                message: `Your top songs have been added to ${state.ownerName}&apos;s playlist.`
-              })
-            }
           },
           onError: (error) => {
             addToast({

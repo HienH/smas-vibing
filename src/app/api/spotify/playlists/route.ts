@@ -33,17 +33,14 @@ export async function POST(request: NextRequest) {
     const { accessToken, session } = authData
     const internalUserId = session.user.id
 
-    console.log('🔍 POST /api/spotify/playlists: Processing request for user:', internalUserId)
-
     // Get user profile to get spotifyUserId - check both users and accounts collections
     const userResult = await getUserByNextAuthId(internalUserId)
+
     if (!userResult.success || !userResult.data) {
-      console.error('🔍 POST /api/spotify/playlists: User not found:', userResult.error)
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
     const spotifyUserId = userResult.data.spotifyUserId
 
-    console.log('🔍 POST /api/spotify/playlists: Found user with spotifyUserId:', spotifyUserId)
 
     // 1. Check if user already has a SMAS playlist on Spotify
     const userPlaylists = await getUserPlaylists(accessToken)
@@ -75,7 +72,7 @@ export async function POST(request: NextRequest) {
 
         await uploadPlaylistCoverImage(accessToken, smasPlaylist.id, smasCoverBase64)
       } catch (err) {
-        console.error('Failed to upload SMAS cover image:', err)
+        // console.error('Failed to upload SMAS cover image:', err)
       }
     }
 
@@ -151,7 +148,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(playlist)
   } catch (error) {
-    console.error('Error creating playlist:', error)
+    // console.error('Error creating playlist:', error)
     if (error instanceof SpotifyAPIError && error.code === 'TOKEN_EXPIRED') {
       return NextResponse.json(
         { error: 'Token expired, please refresh the page' },

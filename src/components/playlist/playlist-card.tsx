@@ -12,10 +12,13 @@ import { type Contribution } from '@/types/firebase'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { format } from 'date-fns'
 import { useSMASPlaylist } from '@/hooks/use-spotify-queries'
+import { toDate } from '@/lib/utils';
+import { Song } from '@/stores/playlist-store'
 
 interface PlaylistCardProps {
   contributions: Contribution[]
 }
+
 
 /**
  * @description Renders the SMAS playlist card with songs, contributor filter, and contributors list.
@@ -25,41 +28,45 @@ interface PlaylistCardProps {
 export function PlaylistCard({ contributions }: PlaylistCardProps) {
   const { data: playlist, isLoading } = useSMASPlaylist()
 
-  const allTracks = useMemo(() => {
-    const contributedSongs = contributions.flatMap(contribution =>
-      contribution.tracks.map(track => ({
-        ...track,
-        id: track.spotifyTrackId,
-        album: track.album || '',
-        contributorName: contribution.contributorName,
-        contributorId: contribution.contributorId,
-        contributedAt: contribution.createdAt,
-      }))
-    )
+  // Build a map from track ID to contributor name
+  const trackIdToContributor: Record<string, string> = useMemo(() => {
+    const map: Record<string, string> = {};
+    contributions.forEach(contribution => {
+      contribution.spotifyTrackUris.forEach(uri => {
+        const match = uri.match(/^spotify:track:(.+)$/);
+        if (match) {
+          map[match[1]] = contribution.contributorName;
+        }
+      });
+    });
+    return map;
+  }, [contributions]);
 
-    return [...contributedSongs]
-  }, [contributions])
+  const [selectedContributor, setSelectedContributor] = useState<string | null>(null)
 
-  // Build unique contributors list
+  // Filtered songs from Spotify playlist
+  const filteredSongs = useMemo(() => {
+    if (!playlist?.songs) return [];
+    let songs = playlist.songs.map((song: { id: string | number }) => ({
+      ...song,
+      contributorName: trackIdToContributor[song.id],
+    }));
+    if (selectedContributor) {
+      songs = songs.filter((song: { contributorName: string }) => song.contributorName === selectedContributor);
+    }
+    return songs;
+  }, [playlist, trackIdToContributor, selectedContributor]);
+
+  // Build unique contributors list from contributions
   const contributors = useMemo(() => {
-    // Add contributors from Firestore
     const contributionList = contributions.map(c => ({
       id: c.contributorId,
       name: c.contributorName,
       date: c.createdAt,
     }))
-      .sort((a, b) => b.date.toMillis() - a.date.toMillis())
-
-    return [...contributionList]
-  }, [contributions])
-
-  const [selectedContributor, setSelectedContributor] = useState<string | null>(null)
-
-  // Filter tracks by selected contributor
-  const filteredTracks = useMemo(() => {
-    if (!selectedContributor) return allTracks
-    return allTracks.filter(track => track.contributorId === selectedContributor)
-  }, [allTracks, selectedContributor])
+      .sort((a, b) => toDate(b.date).getTime() - toDate(a.date).getTime());
+    return [...contributionList];
+  }, [contributions]);
 
   if (isLoading) {
     return (
@@ -87,7 +94,7 @@ export function PlaylistCard({ contributions }: PlaylistCardProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-800">SMAS Playlist</h2>
-          <span className="text-sm text-gray-500">{filteredTracks.length} songs</span>
+          <span className="text-sm text-gray-500">{filteredSongs.length} songs</span>
         </div>
       </CardHeader>
       <CardContent>
@@ -122,7 +129,7 @@ export function PlaylistCard({ contributions }: PlaylistCardProps) {
         </div>
 
         {/* Playlist Tracks */}
-        {filteredTracks.length === 0 ? (
+        {filteredSongs.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-600 mb-2">
               {selectedContributor
@@ -137,7 +144,7 @@ export function PlaylistCard({ contributions }: PlaylistCardProps) {
           </div>
         ) : (
           <div className="space-y-3">
-            {filteredTracks.map((song) => (
+            {filteredSongs.map((song: Song) => (
               <SongItem key={song.id} song={song} />
             ))}
           </div>
@@ -157,7 +164,7 @@ export function PlaylistCard({ contributions }: PlaylistCardProps) {
                   </span>
                   {contributor.date && (
                     <span className="text-xs text-gray-500">
-                      {format(contributor.date.toDate(), 'MMM d, yyyy, h:mm a')}
+                      {format(toDate(contributor.date), 'MMM d')}
                     </span>
                   )}
                 </div>

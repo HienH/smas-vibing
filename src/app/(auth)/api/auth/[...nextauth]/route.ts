@@ -5,10 +5,12 @@ import type { NextAuthOptions } from 'next-auth'
 import { SPOTIFY_CONFIG, API_ENDPOINTS } from '@/lib/constants'
 import { adminAdapterConfig } from '@/lib/firebaseAdmin'
 import { upsertUser } from '@/services/firebase/users'
-import { Timestamp } from 'firebase/firestore'
 import type { Session } from 'next-auth'
 import type { JWT } from 'next-auth/jwt'
 import { getUserByNextAuthId } from '@/services/firebase/users'
+import admin from 'firebase-admin'
+import spotifyAuthCallback from '@/mocks/spotify-auth-callback.json'
+import { NextRequest } from 'next/server'
 
 /**
  * @description Refreshes the Spotify access token using the refresh token.
@@ -130,58 +132,35 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
   callbacks: {
     async signIn({ user, account }) {
-      console.log('🔍 signIn callback: Starting for user:', user?.id)
-
       if (account?.provider === 'spotify' && user && account.providerAccountId && account.access_token) {
         try {
-          console.log('🔍 signIn callback: Getting Spotify user profile...')
           // Get Spotify user profile to get the spotifyUserId
           const spotifyUserProfile = await getSpotifyUserProfile(account.access_token)
-          console.log('🔍 signIn callback: Got Spotify profile:', spotifyUserProfile.id)
 
           // Check if user data already exists in accounts collection
           const existingUser = await getUserByNextAuthId(user.id)
           if (existingUser.success && existingUser.data) {
-            console.log('🔍 signIn callback: User data already exists, skipping upsert')
             return true
           }
 
-          // Store user data in Firestore (this will go to accounts collection via NextAuth adapter)
-          const expiresAt = account.expires_at
-            ? Timestamp.fromMillis(account.expires_at * 1000)
-            : undefined
-
-          console.log('🔍 signIn callback: Upserting user data...')
-          const upsertResult = await upsertUser({
-            id: user.id,
-            spotifyProviderAccountId: account.providerAccountId,
-            spotifyUserId: spotifyUserProfile.id,
-            displayName: user.name ?? '',
-            email: user.email ?? '',
-            imageUrl: user.image ?? undefined,
-            spotifyAccessToken: account.access_token,
-            spotifyRefreshToken: account.refresh_token,
-            spotifyTokenExpiresAt: expiresAt,
-          })
-
-          if (upsertResult.success) {
-            console.log('🔍 signIn callback: User data upserted successfully')
-          } else {
-            console.error('🔍 signIn callback: Failed to upsert user data:', upsertResult.error)
-          }
+          // Do NOT manually upsert user here. Let NextAuth's FirestoreAdapter handle user/account creation and linking.
+          // This prevents OAuthAccountNotLinked errors and ensures proper linking.
+          // If you need to sync extra user data, do it in an event or after session is established.
+          // Example placeholder:
+          // await syncExtraUserData(user, spotifyUserProfile, account)
 
         } catch (error) {
           console.error('❌ Failed to store user data:', error)
           // Don't block sign in if Firestore fails
         }
       } else {
-        console.log('🔍 signIn callback: Missing required data for user storage:', {
-          hasAccount: !!account,
-          provider: account?.provider,
-          hasUser: !!user,
-          hasProviderAccountId: !!account?.providerAccountId,
-          hasAccessToken: !!account?.access_token
-        })
+        // console.log('🔍 signIn callback: Missing required data for user storage:', {
+        //   hasAccount: !!account,
+        //   provider: account?.provider,
+        //   hasUser: !!user,
+        //   hasProviderAccountId: !!account?.providerAccountId,
+        //   hasAccessToken: !!account?.access_token
+        // })
       }
       return true
     },
@@ -233,14 +212,28 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signIn(message: any) {
-      console.log('🎉 SignIn event:', message)
+      // console.log('🎉 SignIn event:', message)
     },
     async signOut(message: any) {
-      console.log('👋 SignOut event:', message)
+      // console.log('👋 SignOut event:', message)
     },
   }
 }
 
+// // 🔁 NextAuth API handler
+// const handler = NextAuth(authOptions)
+
+// export async function GET(req: NextRequest) {
+//   if (process.env.NODE_ENV === 'development') {
+//     return new Response(JSON.stringify(spotifyAuthCallback), {
+//       status: 200,
+//       headers: { 'Content-Type': 'application/json' },
+//     })
+//   }
+//   return handler(req)
+// }
+
+// export { handler as POST }
 // 🔁 NextAuth API handler
 const handler = NextAuth(authOptions)
 export { handler as GET, handler as POST }
