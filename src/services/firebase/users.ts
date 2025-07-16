@@ -139,6 +139,21 @@ export async function updateUserTokens(
   }
 }
 
+export async function updateUserProfile(userId: string, profile: any): Promise<void> {
+  const userRef = db.collection('users').doc(userId)
+  await userRef.set(profile, { merge: true })
+}
+
+/**
+ * @description Updates a user document in Firestore with Spotify profile info.
+ * @param userId - Firestore user document ID
+ * @param profile - Spotify profile info to merge
+ */
+export async function updateUserWithSpotifyProfile(userId: string, profile: any): Promise<void> {
+  const userRef = db.collection('users').doc(userId)
+  await userRef.set(profile, { merge: true })
+}
+
 /**
  * @description Creates or updates user profile with Spotify data.
  * @param {CreateUserData} userData - User data from Spotify.
@@ -324,7 +339,6 @@ export async function getUserByNextAuthId(nextAuthUserId: string): Promise<Datab
       return userResult
     }
 
-    ///THIS IS WHERE IT IS WRONG 
     return {
       success: false,
       error: 'User not found or missing Spotify data',

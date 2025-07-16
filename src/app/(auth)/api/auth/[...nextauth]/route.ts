@@ -4,13 +4,10 @@ import { FirestoreAdapter } from '@next-auth/firebase-adapter'
 import type { NextAuthOptions } from 'next-auth'
 import { SPOTIFY_CONFIG, API_ENDPOINTS } from '@/lib/constants'
 import { adminAdapterConfig } from '@/lib/firebaseAdmin'
-import { upsertUser } from '@/services/firebase/users'
 import type { Session } from 'next-auth'
 import type { JWT } from 'next-auth/jwt'
-import { getUserByNextAuthId } from '@/services/firebase/users'
-import admin from 'firebase-admin'
-import spotifyAuthCallback from '@/mocks/spotify-auth-callback.json'
-import { NextRequest } from 'next/server'
+import { getUserByNextAuthId, getUserBySpotifyId, updateUserProfile, updateUserWithSpotifyProfile } from '@/services/firebase/users'
+
 
 /**
  * @description Refreshes the Spotify access token using the refresh token.
@@ -133,36 +130,10 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === 'spotify' && user && account.providerAccountId && account.access_token) {
-        try {
-          // Get Spotify user profile to get the spotifyUserId
-          const spotifyUserProfile = await getSpotifyUserProfile(account.access_token)
+        return true
 
-          // Check if user data already exists in accounts collection
-          const existingUser = await getUserByNextAuthId(user.id)
-          if (existingUser.success && existingUser.data) {
-            return true
-          }
-
-          // Do NOT manually upsert user here. Let NextAuth's FirestoreAdapter handle user/account creation and linking.
-          // This prevents OAuthAccountNotLinked errors and ensures proper linking.
-          // If you need to sync extra user data, do it in an event or after session is established.
-          // Example placeholder:
-          // await syncExtraUserData(user, spotifyUserProfile, account)
-
-        } catch (error) {
-          console.error('❌ Failed to store user data:', error)
-          // Don't block sign in if Firestore fails
-        }
-      } else {
-        // console.log('🔍 signIn callback: Missing required data for user storage:', {
-        //   hasAccount: !!account,
-        //   provider: account?.provider,
-        //   hasUser: !!user,
-        //   hasProviderAccountId: !!account?.providerAccountId,
-        //   hasAccessToken: !!account?.access_token
-        // })
       }
-      return true
+      return false
     },
 
     async jwt({ token, account, user }) {
@@ -211,29 +182,57 @@ export const authOptions: NextAuthOptions = {
     },
   },
   events: {
-    async signIn(message: any) {
-      // console.log('🎉 SignIn event:', message)
-    },
-    async signOut(message: any) {
-      // console.log('👋 SignOut event:', message)
-    },
-  }
+    async linkAccount({ user, account }) {
+      if (user.id && account.access_token) {
+        const spotifyUserProfile = await getSpotifyUserProfile(account.access_token)
+        const existingUser = await getUserByNextAuthId(user.id)
+        if (existingUser.success && existingUser.data) {
+          const userProfileUpdate = {
+            displayName: spotifyUserProfile.display_name,
+            spotifyUserId: spotifyUserProfile.id,
+            updatedAt: new Date().toISOString(),
+          }
+          await updateUserWithSpotifyProfile(user.id, userProfileUpdate)
+        }
+      }
+    }
+  },
 }
 
-// // 🔁 NextAuth API handler
-// const handler = NextAuth(authOptions)
 
-// export async function GET(req: NextRequest) {
-//   if (process.env.NODE_ENV === 'development') {
-//     return new Response(JSON.stringify(spotifyAuthCallback), {
-//       status: 200,
-//       headers: { 'Content-Type': 'application/json' },
-//     })
+
+
+// events: {
+//   async linkAccount({ user, account, profile }) {
+//     // Get Spotify user profile to get the spotifyUserId
+//     console.log(user.id)
+//     console.log("in LINKERD FUCKIGN ACCOUNT")
+
+//     console.log(account.userId)
+//     console.log("account.userId in LINKERD FUCKIGN ACCOUNT")
+
+//     const spotifyUserProfile = await getSpotifyUserProfile(user.id)
+
+//     // Check if user data already exists in accounts collection
+//     const existingUser = await getUserByNextAuthId(account.userId)
+//     if (existingUser.success && existingUser.data) {
+//       if (account.provider === 'spotify') {
+//         const userProfileUpdate = {
+//           spotifyId: profile.id,
+//           displayName: profile.display_name,
+//           email: profile.email,
+//           imageUrl: profile.images?.[0]?.url,
+//           updatedAt: new Date().toISOString(),
+//         }
+//         await updateUserWithSpotifyProfile(user.id, userProfileUpdate)
+//         return true
+//       }
+
+
+
+//     }
 //   }
-//   return handler(req)
-// }
+// },
 
-// export { handler as POST }
-// 🔁 NextAuth API handler
 const handler = NextAuth(authOptions)
 export { handler as GET, handler as POST }

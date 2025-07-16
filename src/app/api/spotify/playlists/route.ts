@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
 
         await uploadPlaylistCoverImage(accessToken, smasPlaylist.id, smasCoverBase64)
       } catch (err) {
-        // console.error('Failed to upload SMAS cover image:', err)
+        console.error('Failed to upload SMAS cover image:', err)
       }
     }
 

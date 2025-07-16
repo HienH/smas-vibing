@@ -8,11 +8,11 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/(auth)/api/auth/[...nextauth]/route'
 import { addTracksToPlaylist } from '@/lib/spotify'
 import { createContribution, checkUserContribution } from '@/services/firebase/contributions'
-import { getUserByNextAuthId } from '@/services/firebase/users'
 import { getSharingLinkBySlug, updateSharingLink } from '@/services/firebase/sharing-links'
 import admin from 'firebase-admin'
 import { getPlaylistById } from '@/services/firebase'
 
+// HERE I NEED TO MAKE SURE THE OWNERS ACCESS TOKEN IS USED NOT THE CONTRIBUTOR'S 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -53,7 +53,6 @@ export async function POST(request: NextRequest) {
 
     // Add tracks to Spotify playlist
     try {
-      console.log("adding tracks to spotify playlist")
       const playlistDoc = await getPlaylistById(playlistId);
       const spotifyPlaylistId = playlistDoc.data?.spotifyPlaylistId;
       if (!spotifyPlaylistId) {

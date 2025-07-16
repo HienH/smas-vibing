@@ -32,7 +32,7 @@ if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_FIREBA
   try {
     connectFirestoreEmulator(db, 'localhost', 8080)
   } catch (error) {
-    // console.warn(`Firebase emulator already connected ${error}`)
+    console.warn(`Firebase emulator already connected ${error}`)
   }
 }
 

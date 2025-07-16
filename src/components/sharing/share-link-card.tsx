@@ -31,6 +31,7 @@ export function ShareLinkCard() {
       })
       setTimeout(() => setHasCopied(false), 2000)
     } catch (error) {
+      console.warn(error)
       addToast({
         type: 'error',
         title: 'Copy Failed',

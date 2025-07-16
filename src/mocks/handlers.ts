@@ -53,12 +53,12 @@ export const handlers = [
     return HttpResponse.json(mockSpotifyData.smasPlaylist)
   }),
 
-  // Mock Spotify Auth0 callback response
-  http.get('https://accounts.spotify.com/authorize', () => {
-    if (process.env.NODE_ENV !== 'production') {
-      return HttpResponse.json(spotifyAuthCallback)
-    }
-    // Optionally, fall through or return a default error in prod
-    return HttpResponse.json({ error: 'Not available in production' }, { status: 404 })
-  }),
+  // // Mock Spotify Auth0 callback response
+  // http.get('https://accounts.spotify.com/authorize', () => {
+  //   if (process.env.NODE_ENV !== 'production') {
+  //     return HttpResponse.json(spotifyAuthCallback)
+  //   }
+  //   // Optionally, fall through or return a default error in prod
+  //   return HttpResponse.json({ error: 'Not available in production' }, { status: 404 })
+  // }),
 ] 

@@ -130,7 +130,7 @@ export function useContributeSongs() {
             queryClient.invalidateQueries({ queryKey: ['smas-playlist'] })
         },
         onError: (error) => {
-            // Error handling is done in the component for more specific messaging
+            console.log(error)
         },
     })
 }

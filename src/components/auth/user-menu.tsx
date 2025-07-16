@@ -29,7 +29,7 @@ export function UserMenu() {
                 redirect: true
             })
         } catch (error) {
-            // console.error('Sign out failed:', error)
+            console.error('Sign out failed:', error)
         }
     }
 
