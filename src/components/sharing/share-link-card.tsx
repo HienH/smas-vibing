@@ -8,13 +8,19 @@
 import { useState } from 'react'
 import { Card, CardHeader, CardContent, Button, LoadingState, useToast } from '@/components/ui'
 import { useSMASPlaylist } from '@/hooks/use-spotify-queries'
+import type { Session } from 'next-auth'
+
+interface ShareLinkCardProps {
+  session: Session
+}
 
 /**
  * @description Renders the sharing link card with copy functionality.
+ * @param {ShareLinkCardProps} props - Component props.
  * @returns {JSX.Element} The share link card component.
  */
-export function ShareLinkCard() {
-  const { data: playlist, isLoading } = useSMASPlaylist()
+export function ShareLinkCard({ session }: ShareLinkCardProps) {
+  const { data: playlist, isLoading } = useSMASPlaylist(session)
   const { addToast } = useToast()
   const [hasCopied, setHasCopied] = useState(false)
 

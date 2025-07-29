@@ -5,7 +5,6 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import {
-  getUserPlaylists,
   createPlaylist as createSpotifyPlaylist,
   getPlaylistTracks,
   uploadPlaylistCoverImage,
@@ -14,7 +13,7 @@ import {
 import { validateApiRequest } from '@/lib/auth'
 import { SPOTIFY_CONFIG, APP_CONFIG } from '@/lib/constants'
 import type { Playlist as StorePlaylist } from '@/stores/playlist-store'
-import { getOrCreatePlaylist, updatePlaylist } from '@/services/firebase/playlists'
+import { getOrCreatePlaylist, updatePlaylist, getPlaylistsByOwner } from '@/services/firebase/playlists'
 import smasCoverBase64 from '@/public/smas-cover-base64'
 import { createSharingLink, generateUniqueLinkSlug, getSharingLinkByOwner, updateSharingLink } from '@/services/firebase/sharing-links'
 import { getUserByNextAuthId } from '@/services/firebase/users'
@@ -41,42 +40,65 @@ export async function POST(request: NextRequest) {
     }
     const spotifyUserId = userResult.data.spotifyUserId
 
+    // 0. Check if user already has any SMAS playlists in Firestore
+    const userPlaylistsResult = await getPlaylistsByOwner(spotifyUserId)
+    const existingFirestorePlaylists = userPlaylistsResult.success && userPlaylistsResult.data ? userPlaylistsResult.data : []
 
-    // 1. Check if user already has a SMAS playlist on Spotify
-    const userPlaylists = await getUserPlaylists(accessToken)
-    let smasPlaylist = userPlaylists.items.find((playlist: any) =>
+    // Check if any of the user's Firestore playlists are SMAS playlists
+    const existingSmasPlaylist = existingFirestorePlaylists.find(playlist =>
       playlist.name === SPOTIFY_CONFIG.playlistName
     )
 
-    let isNewlyCreated = false
-    // 2. If no SMAS playlist exists, create one on Spotify
-    if (!smasPlaylist) {
-      smasPlaylist = await createSpotifyPlaylist(
-        accessToken,
-        spotifyUserId,
-        SPOTIFY_CONFIG.playlistName,
-        SPOTIFY_CONFIG.playlistDescription,
-        true
-      )
-      smasPlaylist.tracks = { items: [] }
-      isNewlyCreated = true
-    } else {
-      // If playlist exists, fetch its current tracks
-      const playlistTracks = await getPlaylistTracks(accessToken, smasPlaylist.id)
-      smasPlaylist.tracks = playlistTracks
-    }
+    if (existingSmasPlaylist) {
+      // Fetch the existing playlist from Spotify
+      const existingSpotifyPlaylist = await getPlaylistTracks(accessToken, existingSmasPlaylist.spotifyPlaylistId)
 
-    // 3. If newly created, upload the static SMAS cover image
-    if (isNewlyCreated) {
-      try {
-
-        await uploadPlaylistCoverImage(accessToken, smasPlaylist.id, smasCoverBase64)
-      } catch (err) {
-        console.error('Failed to upload SMAS cover image:', err)
+      // Return the existing playlist data
+      const playlist: StorePlaylist = {
+        id: existingSmasPlaylist.spotifyPlaylistId,
+        name: existingSmasPlaylist.name,
+        songs: existingSpotifyPlaylist?.items?.map((item: any) => ({
+          id: item.track.id,
+          name: item.track.name,
+          artist: item.track.artists[0]?.name || 'Unknown Artist',
+          album: item.track.album?.name || 'Unknown Album',
+          imageUrl: item.track.album?.images[0]?.url,
+          contributorId: undefined
+        })) || [],
+        contributors: [],
+        shareLink: '', // Will be populated below
+        firestoreId: existingSmasPlaylist.id,
       }
+
+      // Generate sharing link for existing playlist
+      const existingLinkResult = await getSharingLinkByOwner(spotifyUserId)
+      if (existingLinkResult.success && existingLinkResult.data) {
+        playlist.shareLink = `${APP_CONFIG.url}/share/${existingLinkResult.data.linkSlug}`
+      }
+
+      return NextResponse.json(playlist)
     }
 
-    // 4. Upsert playlist metadata in Firestore
+
+    // 1. Create new SMAS playlist on Spotify
+    const smasPlaylist = await createSpotifyPlaylist(
+      accessToken,
+      spotifyUserId,
+      SPOTIFY_CONFIG.playlistName,
+      SPOTIFY_CONFIG.playlistDescription,
+      true
+    )
+    smasPlaylist.tracks = { items: [] }
+
+    // 2. Upload the static SMAS cover image
+    try {
+      console.log(`Uploading SMAS cover image to playlist ${smasPlaylist.id}`)
+      await uploadPlaylistCoverImage(accessToken, smasPlaylist.id, smasCoverBase64)
+    } catch (err) {
+      console.error('Failed to upload SMAS cover image:', err)
+    }
+
+    // 3. Create new Firestore playlist record
     const firestoreResult = await getOrCreatePlaylist({
       spotifyPlaylistId: smasPlaylist.id,
       spotifyUserId: spotifyUserId,
@@ -84,7 +106,7 @@ export async function POST(request: NextRequest) {
       description: smasPlaylist.description,
     })
 
-    // 5. If playlist metadata has changed, update Firestore
+    // 4. If playlist metadata has changed, update Firestore
     if (
       firestoreResult.success &&
       firestoreResult.data &&
@@ -97,7 +119,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // 6. Generate or fetch sharing link for this playlist
+    // 5. Generate or fetch sharing link for this playlist
     let shareLink = ''
     if (firestoreResult.success && firestoreResult.data) {
       // Check if user already has an existing sharing link
@@ -129,7 +151,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 7. Transform to SMAS format (merge Firestore metadata + Spotify tracks)
+    // 6. Transform to SMAS format (merge Firestore metadata + Spotify tracks)
     const playlist: StorePlaylist = {
       id: smasPlaylist.id,
       name: smasPlaylist.name,
@@ -145,6 +167,7 @@ export async function POST(request: NextRequest) {
       shareLink,
       firestoreId: firestoreResult.success && firestoreResult.data ? firestoreResult.data.id : undefined,
     }
+
 
     return NextResponse.json(playlist)
   } catch (error) {

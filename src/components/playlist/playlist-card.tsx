@@ -14,19 +14,21 @@ import { format } from 'date-fns'
 import { useSMASPlaylist } from '@/hooks/use-spotify-queries'
 import { toDate } from '@/lib/utils';
 import { Song } from '@/stores/playlist-store'
+import type { Session } from 'next-auth'
 
 interface PlaylistCardProps {
   contributions: Contribution[]
+  session: Session
 }
 
 
 /**
  * @description Renders the SMAS playlist card with songs, contributor filter, and contributors list.
- * @param {PlaylistCardProps} props - Props containing contributions array.
+ * @param {PlaylistCardProps} props - Props containing contributions array and session.
  * @returns {JSX.Element} The playlist card component.
  */
-export function PlaylistCard({ contributions }: PlaylistCardProps) {
-  const { data: playlist, isLoading } = useSMASPlaylist()
+export function PlaylistCard({ contributions, session }: PlaylistCardProps) {
+  const { data: playlist, isLoading } = useSMASPlaylist(session)
 
   // Build a map from track ID to contributor name
   const trackIdToContributor: Record<string, string> = useMemo(() => {

@@ -23,6 +23,7 @@ interface DashboardContentProps {
 
 /**
  * @description Renders the main dashboard content with playlist and sharing functionality.
+ * @param {DashboardContentProps} props - Component props.
  * @returns {JSX.Element} The dashboard content component.
  */
 export function DashboardContent({ session }: DashboardContentProps) {
@@ -38,11 +39,8 @@ export function DashboardContent({ session }: DashboardContentProps) {
     data: playlist,
     isLoading: isLoadingPlaylist,
     error: playlistError
-  } = useSMASPlaylist()
+  } = useSMASPlaylist(session)
 
-
-  console.log(playlist)
-  console.log("playlisttttt")
 
   // Fetch contributions using TanStack Query
   const {
@@ -136,10 +134,10 @@ export function DashboardContent({ session }: DashboardContentProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">
-          <PlaylistCard contributions={contributions} />
+          <PlaylistCard contributions={contributions} session={session} />
         </div>
         <div className="space-y-6">
-          <ShareLinkCard />
+          <ShareLinkCard session={session} />
           <ActivityTimeline contributions={contributions} />
           <TopSongsCard songs={topSongs || []} isLoading={isLoadingTopSongs} />
         </div>

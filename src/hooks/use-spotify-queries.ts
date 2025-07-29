@@ -10,6 +10,7 @@ import { useSession } from 'next-auth/react'
 import { useToast } from '@/components/ui'
 import { checkPermissionError, handlePermissionError } from '@/lib/permissions'
 import type { Song } from '@/stores/playlist-store'
+import type { Session } from 'next-auth'
 
 /**
  * @description Fetches user's top songs with caching and error handling.
@@ -59,8 +60,7 @@ export function useTopSongs() {
 /**
  * @description Fetches or creates user's SMAS playlist.
  */
-export function useSMASPlaylist() {
-    const { data: session } = useSession()
+export function useSMASPlaylist(session: Session) {
     const { addToast } = useToast()
 
     const handleReconnect = () => {
