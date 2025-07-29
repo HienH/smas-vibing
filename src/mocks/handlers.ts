@@ -7,7 +7,6 @@
 import { http, HttpResponse } from 'msw'
 import { mockSpotifyData } from './spotify-api'
 import { mockAuthData } from './next-auth'
-import spotifyAuthCallback from './spotify-auth-callback.json'
 
 export const handlers = [
   // Spotify API endpoints

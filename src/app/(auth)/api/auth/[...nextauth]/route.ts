@@ -2,11 +2,11 @@ import NextAuth from 'next-auth'
 import SpotifyProvider from 'next-auth/providers/spotify'
 import { FirestoreAdapter } from '@next-auth/firebase-adapter'
 import type { NextAuthOptions } from 'next-auth'
-import { SPOTIFY_CONFIG, API_ENDPOINTS } from '@/lib/constants'
+import { SPOTIFY_CONFIG } from '@/lib/constants'
 import { adminAdapterConfig } from '@/lib/firebaseAdmin'
 import type { Session } from 'next-auth'
 import type { JWT } from 'next-auth/jwt'
-import { getUserByNextAuthId, getUserBySpotifyId, updateUserProfile, updateUserWithSpotifyProfile } from '@/services/firebase/users'
+import { getUserByNextAuthId, updateUserWithSpotifyProfile } from '@/services/firebase/users'
 import { refreshAccessToken } from '@/lib/spotify'
 
 /**

@@ -47,7 +47,7 @@ export function useSpotifyClient() {
     } finally {
       setLoading(false)
     }
-  }, [session?.user?.id, setTopSongs, setLoading, setError])
+  }, [session?.user, setTopSongs, setLoading, setError])
 
   /**
    * @description Creates or retrieves the user's SMAS playlist.
@@ -84,7 +84,7 @@ export function useSpotifyClient() {
     } finally {
       setLoading(false)
     }
-  }, [session?.user?.id, setPlaylist, setLoading, setError])
+  }, [session?.user, setPlaylist, setLoading, setError])
 
   return {
     fetchTopSongs,
