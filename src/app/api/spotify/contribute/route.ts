@@ -9,10 +9,11 @@ import { authOptions } from '@/app/(auth)/api/auth/[...nextauth]/route'
 import { addTracksToPlaylist } from '@/lib/spotify'
 import { createContribution, checkUserContribution } from '@/services/firebase/contributions'
 import { getSharingLinkBySlug, updateSharingLink } from '@/services/firebase/sharing-links'
-import admin from 'firebase-admin'
 import { getPlaylistById } from '@/services/firebase'
+import { adminDb as db } from '@/lib/firebaseAdmin'
+import admin from 'firebase-admin'
+import { refreshAccessToken } from '@/lib/spotify'
 
-// HERE I NEED TO MAKE SURE THE OWNERS ACCESS TOKEN IS USED NOT THE CONTRIBUTOR'S 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -25,12 +26,6 @@ export async function POST(request: NextRequest) {
     if (!playlistId || !trackUris || !Array.isArray(trackUris)) {
       return NextResponse.json({ error: 'Missing required data' }, { status: 400 })
     }
-
-    // // Get user profile
-    // const userResult = await getUserByNextAuthId(session.user.id)
-    // if (!userResult.success || !userResult.data) {
-    //   return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    // }
 
     // Check cooldown
     const cooldownResult = await checkUserContribution(playlistId, session.user.id)
@@ -45,20 +40,63 @@ export async function POST(request: NextRequest) {
       }, { status: 429 })
     }
 
-    // Get access token from session
-    const accessToken = (session as any).accessToken
-    if (!accessToken) {
-      return NextResponse.json({ error: 'No access token available' }, { status: 401 })
+    // Get playlist to find the owner
+    const playlistDoc = await getPlaylistById(playlistId);
+    if (!playlistDoc.data?.spotifyPlaylistId) {
+      return NextResponse.json({ error: 'No spotify playlist found' }, { status: 401 })
     }
 
-    // Add tracks to Spotify playlist
-    try {
-      const playlistDoc = await getPlaylistById(playlistId);
-      const spotifyPlaylistId = playlistDoc.data?.spotifyPlaylistId;
-      if (!spotifyPlaylistId) {
-        return NextResponse.json({ error: 'No spotify playlist found' }, { status: 401 })
+    // Get playlist owner's access token from accounts collection
+    const spotifyUserId = playlistDoc.data.spotifyUserId;
+    if (!spotifyUserId) {
+      return NextResponse.json({ error: 'Playlist owner not found' }, { status: 404 })
+    }
+
+    const accountsRef = db.collection('accounts');
+    const accountQuery = await accountsRef
+      .where('providerAccountId', '==', spotifyUserId)
+      .where('provider', '==', 'spotify')
+      .limit(1)
+      .get();
+
+    if (accountQuery.empty) {
+      return NextResponse.json({ error: 'Playlist owner account not found' }, { status: 404 })
+    }
+
+    const ownerAccount = accountQuery.docs[0].data();
+    let ownerAccessToken = ownerAccount.access_token;
+
+    if (!ownerAccessToken) {
+      return NextResponse.json({ error: 'Playlist owner access token not available' }, { status: 401 })
+    }
+
+    // Check if access token is expired and refresh if needed
+    const expiresAt = ownerAccount.expires_at;
+    if (expiresAt && Date.now() >= expiresAt * 1000) {
+      try {
+        const refreshed = await refreshAccessToken(ownerAccount.refresh_token);
+        if ('error' in refreshed) {
+          return NextResponse.json({ error: 'Failed to refresh owner access token' }, { status: 401 })
+        }
+
+        // Update the account document with new tokens
+        const accountDocRef = accountQuery.docs[0].ref;
+        await accountDocRef.update({
+          access_token: refreshed.accessToken,
+          refresh_token: refreshed.refreshToken,
+          expires_at: Math.floor(refreshed.accessTokenExpires / 1000), // Convert to seconds
+        });
+
+        ownerAccessToken = refreshed.accessToken;
+      } catch (error) {
+        console.error('Failed to refresh access token:', error);
+        return NextResponse.json({ error: 'Failed to refresh owner access token' }, { status: 401 })
       }
-      await addTracksToPlaylist(accessToken, spotifyPlaylistId, trackUris)
+    }
+
+    // Add tracks to Spotify playlist using owner's access token
+    try {
+      await addTracksToPlaylist(ownerAccessToken, playlistDoc.data.spotifyPlaylistId, trackUris)
     } catch (error) {
       console.error('Failed to add tracks to playlist:', error)
       return NextResponse.json({ error: 'Failed to add tracks to playlist' }, { status: 500 })

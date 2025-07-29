@@ -5,6 +5,7 @@
  */
 
 import { spotifyRateLimiter } from './rate-limiter'
+import { API_ENDPOINTS } from './constants'
 
 export class SpotifyAPIError extends Error {
   constructor(
@@ -203,4 +204,50 @@ export async function uploadPlaylistCoverImage(
       body: base64Image,
     }
   )
+}
+
+/**
+ * @description Refreshes the Spotify access token using the refresh token.
+ * @param {string} refreshToken - The refresh token to use.
+ * @returns {Promise<any>} The refreshed token data or error.
+ */
+export async function refreshAccessToken(refreshToken: string) {
+  try {
+    const response = await fetch(API_ENDPOINTS.spotify.token, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${Buffer.from(
+          `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`
+        ).toString('base64')}`,
+      },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+      }),
+    })
+
+    const tokens = await response.json()
+
+    if (!response.ok) {
+      console.error('❌ Spotify token refresh failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: tokens.error,
+        errorDescription: tokens.error_description
+      })
+      throw tokens
+    }
+
+    return {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token ?? refreshToken,
+      accessTokenExpires: Date.now() + tokens.expires_in * 1000,
+    }
+  } catch (error) {
+    console.error('💥 Token refresh error:', error)
+    return {
+      error: 'RefreshAccessTokenError',
+    }
+  }
 } 
